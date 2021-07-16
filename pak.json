@@ -1,0 +1,28 @@
+{
+    "name": "js-log",
+    "description": "Node logging",
+    "version": "1.0.0",
+    "type": "module",
+    "keywords": [
+        "node",
+        "log"
+    ],
+    "author": {
+        "name": "Michael O'Brien",
+        "email": "mob@emobrien.com"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/sensedeep/js-log.git"
+    },
+    "bugs": {
+        "url": "http://github.com/sensedeep/js-log/issues"
+    },
+    "licenses": [
+        {
+            "type": "MIT",
+            "url": "https://opensource.org/licenses/MIT"
+        }
+    ],
+    "origin": "sensedeep/js-log"
+}

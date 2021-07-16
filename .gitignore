@@ -1,0 +1,9 @@
+node_modules
+dist
+future
+types
+node_modules
+dist/
+coverage
+.coveralls.yml
+.dynamodb
