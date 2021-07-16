@@ -1,15 +1,14 @@
 ![SenseLogs](https://www.sensedeep.com/images/senselogs.png)
 
 # SenseLogs
+Logging designed for serverless
 
 Simple, flexible, dynamic, blazing fast logging library designed for serverless.
 
-<!--
-[![Build Status](https://img.shields.io/github/workflow/status/sensedeep/senselogs/build)](https://img.shields.io/github/   workflow/status/sensedeep/senselogs/build)
+[![Build Status](https://img.shields.io/github/workflow/status/sensedeep/senselogs/build)](https://img.shields.io/github/workflow/status/sensedeep/senselogs/build)
 [![npm](https://img.shields.io/npm/v/senselogs.svg)](https://www.npmjs.com/package/senselogs)
 [![npm](https://img.shields.io/npm/l/senselogs.svg)](https://www.npmjs.com/package/senselogs)
-[![Coverage Status](https://coveralls.io/repos/github/sensedeep/senselogs/badge.svg?branch=main)](https://coveralls.io/     github/sensedeep/senselogs?branch=main)
--->
+[![Coverage Status](https://coveralls.io/repos/github/sensedeep/senselogs/badge.svg?branch=main)](https://coveralls.io/github/sensedeep/senselogs?branch=main)
 
 SenseLogs is a fast log library designed exclusively for serverless apps using NodeJS.
 
@@ -396,7 +395,7 @@ Convenience method that takes the level as the first argument
 
 #### metrics(namespace, values, dimensions = [[]])
 
-Emit metrics in CloudWatch EMF format. 
+Emit metrics in CloudWatch EMF format.
 
 The namespace is your unique custom namespace and usually consists of your name with service name. For example: 'SenseDeep/App'.
 
