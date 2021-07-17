@@ -17,7 +17,7 @@ type ConstructorOptions = {
 
 export default class SenseLogs {
     context: {};
-    constructor(options: ConstructorOptions, context?: {});
+    constructor(options?: ConstructorOptions, context?: {});
     addContext(contexts: {} | {}[]): SenseLogs;
     addDestination(dest: function): SenseLogs;
     addFilter(filter: string | string[]): SenseLogs;
