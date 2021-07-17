@@ -1,20 +1,17 @@
 ![SenseLogs](https://www.sensedeep.com/images/senselogs.png)
 
-# SenseLogs
-Logging designed for serverless
-
-Simple, flexible, dynamic, blazing fast logging library designed for serverless.
-
 [![Build Status](https://img.shields.io/github/workflow/status/sensedeep/senselogs/build)](https://img.shields.io/github/workflow/status/sensedeep/senselogs/build)
 [![npm](https://img.shields.io/npm/v/senselogs.svg)](https://www.npmjs.com/package/senselogs)
 [![npm](https://img.shields.io/npm/l/senselogs.svg)](https://www.npmjs.com/package/senselogs)
 [![Coverage Status](https://coveralls.io/repos/github/sensedeep/senselogs/badge.svg?branch=main)](https://coveralls.io/github/sensedeep/senselogs?branch=main)
 
-SenseLogs is a fast log library designed exclusively for serverless apps using NodeJS.
+SenseLogs is a simple, flexible, dynamic, blazing fast log library designed exclusively for serverless apps using NodeJS.
 
-While there are many other good logging libraries, that claim to be fast, they were not designed `for` serverless and so are bigger and slower than necessary.
+While there are many other good logging libraries that claim to be fast, they were not designed `for` serverless and so are bigger and slower than necessary.
 
-Serverless apps have special requirments like minimizing cold-start time, dynamic log level and filtering control without redploying and being able to capture detailed context and request information without modifying your app. SenseLogs is designed to do this and more.
+Furthermore, serverless apps have special requirments like minimizing cold-start time, dynamic log level and filtering control without redploying and being able to capture detailed context and request information without modifying your functions. 
+
+SenseLogs is designed to do this, simply and elegantly.
 
 ## SenseLogs Features
 
@@ -366,13 +363,13 @@ A level is a simple word that may be published as a method on the logger instanc
 
 The log level is added to the context when a message is emitted as `@level`.
 
-#### addFilter(filter)
+#### addFilter(filter: string | array)
 
 Add the filter levels described by the given filter to the current filter set. The filter may be a comma separated string or an array of levels.
 
 The current filter specifies the levels that enabled to emit log data.
 
-#### child(context): SenseLogs
+#### child(context: {}): SenseLogs
 
 Create a child log instance derived from the parent log. The child context has its own context inherited from the parent log instance and it has its own set of log levels.
 
@@ -389,11 +386,11 @@ child.color('Favorite color')
 This will clear the context for the log instance.
 
 
-#### emit(level, message, context)
+#### emit(level: string, message: string, context: {})
 
 Convenience method that takes the level as the first argument
 
-#### metrics(namespace, values, dimensions = [[]])
+#### metrics(namespace: string, values: [], dimensions = [[]])
 
 Emit metrics in CloudWatch EMF format.
 
@@ -407,14 +404,14 @@ Set the filter levels described by the given filter. The filter may be a comma s
 
 The current filter set specifies the levels that enabled to emit log data.
 
-#### setOverride(override, expire)
+#### setOverride(filter: string | array, expire: number)
 
 Set the override filter levels described by the given filter. The filter may be a comma separated string or an array of levels.
 
 The override filter will override the default filter until the `expire` time has been reached. Expire is a Unix epoch date (seconds since Jan 1 1970).
 
 
-#### setSample(sample, percentage)
+#### setSample(filter: string | array, percentage: number)
 
 Set the sampling filter levels described by the given filter. The filter may be a comma separated string or an array of levels.
 

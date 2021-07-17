@@ -1,6 +1,6 @@
 {
     "name": "senselogs",
-    "version": "0.8.0",
+    "version": "0.8.1",
     "description": "Dynamic serverless logging",
     "main": "dist/cjs/index.js",
     "module": "dist/mjs/index.js",

@@ -108,7 +108,7 @@ export default class SenseLogs {
         }
         for (let level of levels) {
             if (this[level] != null) {
-                throw new Error(`Level already defined on log`)
+                throw new Error(`Level method "${level}" already defined on log`)
             }
             this.#makeMethod(level)
         }

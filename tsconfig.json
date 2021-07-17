@@ -1,8 +1,9 @@
 {
     "extends": "./tsconfig-base.json",
     "compilerOptions": {
+        "lib": ["esnext"],
         "module": "esnext",
         "outDir": "dist/mjs",
-        "target": "esnext"
+        "target": "es2020"
     }
 }
