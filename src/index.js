@@ -229,7 +229,7 @@ export default class SenseLogs {
                 if (sample == null) {
                     return false
                 }
-                if (sample.count++ < sample.total) {
+                if (++sample.count < sample.total) {
                     return false
                 }
                 sample.count = 0
