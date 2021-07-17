@@ -54,7 +54,7 @@ export default class SenseLogs {
             redact
             timestamp
     */
-    constructor(options = {destination: 'console'}, context = {}) {
+    constructor(options = {destination: 'json'}, context = {}) {
         if (!options.child) {
             this.#options = options
             this.#name = options.name || 'app'
@@ -85,14 +85,15 @@ export default class SenseLogs {
             }
             this.setFilter(filter)
 
-            if (options.destination == 'json') {
-                this.addDestination(new JsonDest())
-            } else if (options.destination == 'console') {
+            if (options.destination == 'console') {
                 this.addDestination(new ConsoleDest())
             } else if (options.destination == 'capture') {
                 this.addDestination(new CaptureDest())
-            } else if (options.destination) {
+            } else if (options.destination && typeof options.destination.write == 'function') {
                 this.addDestination(options.destination)
+            } else {
+                //  Default to json
+                this.addDestination(new JsonDest())
             }
             this.addUncaughtExceptions()
         }
