@@ -9,7 +9,7 @@ SenseLogs is a simple, flexible, dynamic, blazing fast log library designed excl
 
 While there are many other good logging libraries that claim to be fast, they were not designed `for` serverless and so are bigger and slower than necessary.
 
-Furthermore, serverless apps have special requirments like minimizing cold-start time, dynamic log level and filtering control without redploying and being able to capture detailed context and request information without modifying your functions. 
+Furthermore, serverless apps have special requirments like minimizing cold-start time, dynamic log level and filtering control without redploying and being able to capture detailed context and request information without modifying your functions.
 
 SenseLogs is designed to do this, simply and elegantly.
 
@@ -90,7 +90,7 @@ By default SenseLogs will emit log messages in JSON format. This is highly recom
 You can also configure the logger to emit human readable output by setting the destination to 'console'
 
 ```javascript
-const log = new SenseLogs({ destination: 'console' })
+const log = new SenseLogs({destination: 'console'})
 ```
 
 You can supply additional destinations at any time via the `addDestination`. This is useful to ship your logs to other destinations or to transform and format the output as you please.
