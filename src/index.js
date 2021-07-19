@@ -143,6 +143,9 @@ export default class SenseLogs {
         The filter is common to all child loggers.
     */
     setFilter(filter) {
+        if (!filter) {
+            return
+        }
         this.#top.#filter = {}
         return this.addFilter(filter)
     }
@@ -150,8 +153,11 @@ export default class SenseLogs {
     /*
         Define a limited duration override filter
     */
-    setOverride(filterj, expire) {
-        for (let level of filterj.split(',').map(o => o.trim())) {
+    setOverride(filter, expire) {
+        if (!filter) {
+            return
+        }
+        for (let level of filter.split(',').map(o => o.trim())) {
             this.#top.#override[level] = expire
         }
         return this
@@ -161,6 +167,9 @@ export default class SenseLogs {
         Define a sampling filter to apply to a percentage of requests
     */
     setSample(filter, rate) {
+        if (!filter) {
+            return
+        }
         if (rate > 0) {
             for (let level of filter.split(',').map(s => s.trim())) {
                 this.#top.#sample[level] = {count: 0, total: 100 / rate}
