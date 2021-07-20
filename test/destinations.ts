@@ -7,19 +7,51 @@ import {SenseLogs, print, dump, delay} from './utils/init'
 
 test('JSON', async() => {
     const log = new SenseLogs({destination: 'json'})
-    //  Can't capture result so just test all proceeds.
+
+    let save = console.log
+    console.log = () => {}
+
     log.info('Hello World')
     expect(true).toBe(true)
+    console.log = save
 })
 
 test('Console', async() => {
     const log = new SenseLogs({destination: 'console'})
-    //  Can't capture result so just test all proceeds.
+
+    let saveLog = console.log
+    let saveError = console.log
+    console.log = () => {}
+    console.error = () => {}
+
     log.info('Hello World')
     expect(true).toBe(true)
+
+    log.error(new Error('boom'))
+    expect(true).toBe(true)
+
+    log.error('', new Error('boom'))
+    expect(true).toBe(true)
+
+    log.error('Boom')
+    expect(true).toBe(true)
+
+    log.addFilter('trace')
+    log.trace('Trace message')
+    expect(true).toBe(true)
+
+    log.metrics('Acme/Rockets', {sessions: 1})
+    expect(true).toBe(true)
+
+    log.addContext({one: 1, two: 2})
+    log.info('Hello World')
+    expect(true).toBe(true)
+
+    console.log = saveLog
+    console.error = saveError
 })
 
-test('Console', async() => {
+test('Destination', async() => {
     let result = []
     const log = new SenseLogs({
         destination: {
@@ -35,3 +67,20 @@ test('Console', async() => {
     })
 })
 
+test('Set Destination', async() => {
+    let result = [], buf = []
+
+    const log = new SenseLogs({destination: 'capture'})
+
+    log.setDestination({
+        write: (log, context) => {
+            buf.push(context)
+        }
+    })
+    log.info('Hello World')
+    expect(result.length).toBe(0)
+    expect(buf.length).toBe(1)
+    expect(buf[0]).toMatchObject({
+        'message': 'Hello World',
+    })
+})

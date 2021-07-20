@@ -1,33 +1,31 @@
 /*
-    child.ts - child()
+    message.ts
  */
 import {SenseLogs, print, dump, delay} from './utils/init'
 
 // jest.setTimeout(7200 * 1000)
 
-test('child instance', async() => {
+test('Context messages', async() => {
     const log = new SenseLogs({destination: 'capture'})
 
-    let child = log.child()
-    child.info('Hello World')
-
-    let result = child.flush()
+    log.info('Hello World', {message: 'embedded'})
+    let result = log.flush()
     expect(result.length).toBe(1)
     expect(result[0]).toMatchObject({
+        '@level': 'info',
+        '@message': 'embedded',
         'message': 'Hello World',
     })
 })
 
-test('child scenarios', async() => {
+test('Object message', async() => {
     const log = new SenseLogs({destination: 'capture'})
 
-    let child = log.child({source: 'greeting'})
-    child.info('Hello World')
-
-    let result = child.flush()
+    log.info({greeting: 'Hello World'} as unknown as string)
+    let result = log.flush()
     expect(result.length).toBe(1)
     expect(result[0]).toMatchObject({
-        'source': 'greeting',
-        'message': 'Hello World',
+        '@level': 'info',
+        'message': '{"greeting":"Hello World"}',
     })
 })

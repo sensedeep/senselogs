@@ -66,7 +66,6 @@ test('Constructor: levels', async() => {
 })
 
 test('Constructor: redact', async() => {
-    //  TS
     const log: any = new SenseLogs({
         destination: 'capture',
         redact: (context: any) => {
@@ -104,5 +103,23 @@ test('Constructor: env vars', async() => {
 
     process.env.LOG_SAMPLE="0%:error,info,data,trace"
     log = new SenseLogs({destination: 'capture'})
+    expect(log instanceof SenseLogs).toBe(true)
+
+    process.env.LOG_FILTER="default"
+    log = new SenseLogs({destination: 'capture'})
+    expect(log instanceof SenseLogs).toBe(true)
+})
+
+test('Add Node exceptions', async() => {
+    let log: any = new SenseLogs()
+    log.addNodeExceptions()
+    expect(log instanceof SenseLogs).toBe(true)
+})
+
+test('Add Browser exceptions', async() => {
+    let log: any = new SenseLogs()
+    let g: any = global
+    g.window = global
+    log.addUncaughtExceptions()
     expect(log instanceof SenseLogs).toBe(true)
 })
