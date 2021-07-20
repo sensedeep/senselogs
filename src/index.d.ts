@@ -20,16 +20,22 @@ export default class SenseLogs {
     constructor(options?: ConstructorOptions, context?: {});
     addContext(contexts: {} | {}[]): SenseLogs;
     addDestination(dest: function): SenseLogs;
-    addFilter(filter: string | string[]): SenseLogs;
-    addLevels(levels: string | string[]): SenseLogs;
+    addFilter(filter?: string | string[]): SenseLogs;
+    addLevels(levels?: string | string[]): SenseLogs;
     child(context?: {}): SenseLogs;
     clearContext(): SenseLogs;
     emit(level: string, message: string, context?: {}): void;
     flush(): {}[];
+    getFilter(): string[];
+    getLevels(): string[];
+    getSample(): {};
+    getOverride(): {};
     metrics(namespace: string, values: {}, dimensions?: any[][]): void;
-    setFilter(filter: string | string[]): SenseLogs;
-    setOverride(filter: string | string[]): SenseLogs;
-    setSample(filter: string | string[]): SenseLogs;
+    setDestination(dest: function): SenseLogs;
+    setFilter(filter?: string | string[]): SenseLogs;
+    setLevels(levels?: string | string[]): SenseLogs;
+    setOverride(filter?: string | string[], expire?: Date): SenseLogs;
+    setSample(filter?: string | string[], rate?: number): SenseLogs;
 
     //  Default levels
     data(message: string | Error, context?: {}): void;

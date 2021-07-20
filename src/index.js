@@ -34,6 +34,7 @@ const DefaultLevels = ['data', 'debug', 'error', 'fatal', 'info', 'trace', 'warn
 const DefaultFilter = ['fatal', 'error', 'metrics', 'info', 'warn']
 
 export default class SenseLogs {
+    #defaultFilter
     #destinations
     #filter
     #options
@@ -56,12 +57,13 @@ export default class SenseLogs {
     */
     constructor(options = {destination: 'json'}, context = {}) {
         if (!options.child) {
-            this.#options = options
+            this.#options = Object.assign({}, options)
             this.#name = options.name || 'app'
             this.#redact = options.redact
             this.#timestamp = options.timestamp || false
             this.#top = this
             this.#filter = {}
+            this.#defaultFilter = null
             this.#override = {}
             this.#sample = {}
             this.#destinations = []
@@ -70,9 +72,11 @@ export default class SenseLogs {
             this.addLevels(options.levels || DefaultLevels)
 
             let filter = options.filter || DefaultFilter
+
+            /* istanbul ignore next */
             if (typeof process != 'undefined' && process.env) {
                 if (process.env.LOG_FILTER != null) {
-                    filter = (process.env.LOG_FILTER == 'default') ? DefaultFilter : process.env.LOG_FILTER
+                    filter = process.env.LOG_FILTER
                 }
                 if (process.env.LOG_SAMPLE != null) {
                     let [percentage, filter] = process.env.LOG_SAMPLE.split(':')
@@ -84,6 +88,7 @@ export default class SenseLogs {
                 }
             }
             this.setFilter(filter)
+            this.#defaultFilter = Object.keys(this.#filter)
 
             if (options.destination == 'console') {
                 this.addDestination(new ConsoleDest())
@@ -104,16 +109,30 @@ export default class SenseLogs {
         Add a list of levels to the existing levels. Each level will create a method of the same name on this.
      */
     addLevels(levels) {
+        if (!levels) {
+            return this
+        }
         if (!Array.isArray(levels)) {
-            levels = [levels]
+            levels = levels.split(',').map(l => l.trim())
         }
         for (let level of levels) {
-            if (this[level] != null) {
-                throw new Error(`Level method "${level}" already defined on log`)
+            if (level) {
+                if (this[level] != null) {
+                    throw new Error(`Level method "${level}" already defined on log`)
+                }
+                this.#makeMethod(level)
             }
-            this.#makeMethod(level)
         }
         return this
+    }
+
+    getLevels() {
+        return Object.keys(this.#levels)
+    }
+
+    setLevels(levels) {
+        this.#levels = {}
+        return this.addLevels(levels)
     }
 
     /*
@@ -129,54 +148,98 @@ export default class SenseLogs {
         The filter is common to all child loggers.
     */
     addFilter(filter) {
+        if (!filter) {
+            return this
+        }
+        if (!Array.isArray(filter)) {
+            if (filter == 'default') {
+                filter = this.#defaultFilter || DefaultFilter
+            } else {
+                filter = filter.split(',').map(f => f.trim())
+            }
+        }
+        for (let level of filter) {
+            if (level) {
+                this.#top.#filter[level] = true
+            }
+        }
+        return this
+    }
+
+    /*
+        Update the filter that specifies which levels should emit messages. The filter is common to all child loggers.
+        If filter is null, revert to the default specified filter or DefaultFilter.
+    */
+    setFilter(filter) {
+        this.#top.#filter = {}
+        if (filter) {
+            return this.addFilter(filter)
+        }
+        return this
+    }
+
+    getFilter() {
+        return Object.keys(this.#filter)
+    }
+
+    getOverride() {
+        return this.#override
+    }
+
+    getSample() {
+        return this.#sample
+    }
+
+    /*
+        Define a limited duration override filter. If filter is null, clear overrides.
+    */
+    setOverride(filter, expire) {
+        if (!filter) {
+            this.#override = {}
+            return this
+        }
+        if (!expire) {
+            expire = Date.now()
+        }
         if (!Array.isArray(filter)) {
             filter = filter.split(',').map(f => f.trim())
         }
         for (let level of filter) {
-            this.#top.#filter[level] = true
+            if (level) {
+                this.#top.#override[level] = expire
+            }
         }
         return this
     }
 
     /*
-        Update the filter that specifies which levels should emit messages.
-        The filter is common to all child loggers.
-    */
-    setFilter(filter) {
-        if (!filter) {
-            return
-        }
-        this.#top.#filter = {}
-        return this.addFilter(filter)
-    }
-
-    /*
-        Define a limited duration override filter
-    */
-    setOverride(filter, expire) {
-        if (!filter) {
-            return
-        }
-        for (let level of filter.split(',').map(o => o.trim())) {
-            this.#top.#override[level] = expire
-        }
-        return this
-    }
-
-    /*
-        Define a sampling filter to apply to a percentage of requests
+        Define a sampling filter to apply to a percentage of requests. If sample is null, clear samples.
     */
     setSample(filter, rate) {
         if (!filter) {
-            return
+            this.#sample = {}
+            return this
+        }
+        if (rate == null) {
+            rate = 0
+        }
+        if (rate > 100) {
+            rate = 100
+        }
+        if (!Array.isArray(filter)) {
+            filter = filter.split(',').map(f => f.trim())
         }
         if (rate > 0) {
-            for (let level of filter.split(',').map(s => s.trim())) {
-                this.#top.#sample[level] = {count: 0, total: 100 / rate}
+            for (let level of filter) {
+                if (level) {
+                    this.#top.#sample[level] = {count: 0, total: 100 / rate}
+                }
             }
         } else {
-            for (let level of filter.split(',').map(s => s.trim())) {
-                this.#top.#sample[level] = null
+            for (let level of filter) {
+                if (level) {
+                    this.#top.#sample[level] = null
+                }
             }
         }
         return this
@@ -191,7 +254,7 @@ export default class SenseLogs {
         log.#top = this.#top
         log.#levels = Object.assign({}, this.#levels)
         for (let level of Object.keys(this.#levels)) {
-            log[level] = this[level]
+            log.#makeMethod(level)
         }
         return log
     }
@@ -200,8 +263,14 @@ export default class SenseLogs {
         Add a new logger destination. Multiple destinations are supported.
     */
     addDestination(dest) {
-       this.#top.#destinations.push(dest)
-       return this
+        this.#top.#destinations.push(dest)
+        return this
+    }
+
+    setDestination(dest) {
+        this.#top.#destinations = []
+        this.#top.#destinations.push(dest)
+        return this
     }
 
     /*
@@ -337,6 +406,7 @@ export default class SenseLogs {
         if (!this.#top.#filter.metrics) {
             return
         }
+        /* istanbul ignore next */
         if (!namespace || !values) {
             throw new Error('Missing namespace or values')
         }
@@ -365,9 +435,11 @@ export default class SenseLogs {
     addUncaughtExceptions() {
         let self = this
         if (typeof window != 'undefined') {
+            /* istanbul ignore next */
             global.onerror = function(message, module, line, column, err) {
                 self.error(message, err)
             }
+            /* istanbul ignore next */
             global.onunhandledrejection = (rejection) => {
                 let message = `Unhandled promise rejection : ${rejection.message}`
                 if (rejection && rejection.reason && rejection.reason.stack) {
@@ -380,6 +452,7 @@ export default class SenseLogs {
 
     addNodeExceptions() {
         let self = this
+        /* istanbul ignore next */
         if (typeof process != 'undefined') {
             process.on("uncaughtException", function(err) {
                 self.error('Uncaught exception', err)
@@ -394,15 +467,10 @@ export default class SenseLogs {
 class JsonDest {
     write(log, context) {
         let level = context['@level']
-        try {
-            if (level == 'metrics') {
-                console.log(context.message)
-            } else {
-                console.log(JSON.stringify(context) + '\n')
-            }
-
-        } catch (err) {
-            console.log(context.message + '\n')
+        if (level == 'metrics') {
+            console.log(context.message)
+        } else {
+            console.log(JSON.stringify(context) + '\n')
         }
     }
 }
@@ -435,35 +503,31 @@ class ConsoleDest {
     write(log, context) {
         let message = context.message
         let module = context['@module']
-        try {
-            let time = this.getTime()
-            let level = context['@level']
-            let exception = context['@exception']
-            if (exception) {
-                console.error(`${time}: ${module}: ${level}: ${message}: ${exception.message}`)
-                console.error(exception.stack)
-                console.error(JSON.stringify(context, null, 4) + '\n')
+        let time = this.getTime()
+        let level = context['@level']
+        let exception = context['@exception']
+        if (exception) {
+            console.error(`${time}: ${module}: ${level}: ${message}: ${exception.message}`)
+            console.error(exception.stack)
+            console.error(JSON.stringify(context, null, 4) + '\n')
 
-            } else if (level == 'error') {
-                console.error(`${time}: ${module}: ${level}: ${message}`)
-                console.error(JSON.stringify(context, null, 4) + '\n')
+        } else if (level == 'error') {
+            console.error(`${time}: ${module}: ${level}: ${message}`)
+            console.error(JSON.stringify(context, null, 4) + '\n')
 
-            } else if (level == 'metrics') {
-                console.log(context.message + '\n')
+        } else if (level == 'metrics') {
+            console.log(context.message + '\n')
 
-            } else if (level == 'trace') {
-                console.log(`${time}: ${module}: ${level}: ${message}`)
+        } else if (level == 'trace') {
+            console.log(`${time}: ${module}: ${level}: ${message}`)
+            console.log(JSON.stringify(context, null, 4) + '\n')
+
+        } else {
+            console.log(`${time}: ${module}: ${level}: ${message}`)
+            if (Object.keys(context).length > 3) {
+                //  More than: message, @module and @level
                 console.log(JSON.stringify(context, null, 4) + '\n')
-
-            } else {
-                console.log(`${time}: ${module}: ${level}: ${message}`)
-                if (Object.keys(context).length > 3) {
-                    //  More than: message, @module and @level
-                    console.log(JSON.stringify(context, null, 4) + '\n')
-                }
             }
-        } catch (err) {
-            console.log(`Exception in emitting log message: ${message}`)
         }
     }
 

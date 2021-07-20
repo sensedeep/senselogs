@@ -25,7 +25,7 @@ SenseLogs is designed to do this, simply and elegantly.
 * Flexible log levels and filters.
 * Inheriting child log instances for per-module logging.
 * For local debugging, emits in human readable formats.
-* APIs to emit CloudWatch custom metrics using EMF.
+* Easily emit CloudWatch custom metrics using EMF.
 * Integrates with SenseDeep developer studio.
 * No dependencies.
 * Full TypeScript support.
@@ -85,7 +85,7 @@ log.custom('My custom level')
 
 ### Output Format
 
-By default SenseLogs will emit log messages in JSON format. This is highly recommended. You should add rich context to your logging messages and use a log management solution like [SenseDeep](https://www.sensedeep.com) that is designed to handle JSON log messages with ease.
+By default SenseLogs will emit log messages in JSON format to the console. Using JSON format is highly recommended. You should add rich context to your logging messages and use a log management solution like [SenseDeep](https://www.sensedeep.com) that is designed to handle JSON log messages with ease.
 
 You can also configure the logger to emit human readable output by setting the destination to 'console'
 
@@ -100,6 +100,8 @@ log.addDestination({write: (logger, context) =>
     console.log(JSON.stringify(context))
 }})
 ```
+
+Use `setDestination` to replace all destinations.
 
 By default, SenseLogs messages do not include a timestamp because Lambda and other services typically add their own timestamps. If you need a timestamp, set the `params.timestamp` to true in the SenseLogs constructor.
 
@@ -309,8 +311,8 @@ The `options` parameter is of type `object` with the following properties:
 | Property | Type | Description |
 | -------- | :--: | ----------- |
 | destination | `string\|function` | Set to `json`, `console` or a function to be invoked as callback(logger, context). |
-| filter | `string\|array` | Set to a comma separated list of log levels that are enabled. |
-| levels | `string\|array` | Set to a comma separated list of log levels or an array of levels. Log levels are words that are made available as methods on the log instance. For example: `info`, `error`. |
+| filter | `string\|array` | Set to a comma separated list or array of log levels that are enabled. |
+| levels | `string\|array` | Set to a comma separated list of possible log levels or an array of levels. Log levels are words that are made available as methods on the log instance. For example: `info`, `error`. |
 | name | `string` | Name for your app or service. The context.@module is set to this value by default. |
 | redact | `function` | Callback function invoked prior to passing the context data to the logger. Invoked as `callback(context)`|
 | timestamp | `boolean` | Set to true to add a context.timestamp to the log context message.|
@@ -386,6 +388,24 @@ child.color('Favorite color')
 This will clear the context for the log instance.
 
 
+#### getLevels()
+
+Return an array of current log levels.
+
+#### getFilter()
+
+Return an array of the current filter levels.
+
+
+#### getOverride()
+
+Return a map containing the current override definition.
+
+#### getSample()
+
+Return a map containing the current sample definition.
+
+
 #### emit(level: string, message: string, context: {})
 
 Convenience method that takes the level as the first argument
@@ -402,20 +422,35 @@ The values is an array of metric values to submit. Dimensions are the optional C
 
 Set the filter levels described by the given filter. The filter may be a comma separated string or an array of levels.
 
-The current filter set specifies the levels that enabled to emit log data.
+The current filter set specifies the levels that enabled to emit log data. If filter is null, this call will remove all filter levels. If filter is set to 'default', the filter levels will be restored to the default defined via the constructor.
+
+
+
+#### setLevels(levels: string | array)
+
+Set the given levels as the set of levels. The levels property may be a comma separated string or an array of levels.
+A level is a simple word that may be published as a method on the logger instance. For example, a level of `highlight` would expose the
+`log.highlight()` method to log at the `highlight` level.
+
+The log level is added to the context when a message is emitted as `@level`.
+
 
 #### setOverride(filter: string | array, expire: number)
 
-Set the override filter levels described by the given filter. The filter may be a comma separated string or an array of levels.
+Set the override filter levels described by the given filter. The override filter will augment the default filter with additional levels until the `expire` time has been reached. When override levels are defined, the enabled levels are those defined by the union of the filter levels and the override levels.
 
-The override filter will override the default filter until the `expire` time has been reached. Expire is a Unix epoch date (seconds since Jan 1 1970).
+The filter may be a comma separated string or an array of levels. If the filter is null, this call will clear all overrides.
+
+Expire is a Unix epoch date (seconds since Jan 1 1970).
 
 
 #### setSample(filter: string | array, percentage: number)
 
 Set the sampling filter levels described by the given filter. The filter may be a comma separated string or an array of levels.
 
-The sample filter will augment the filter and override filter for the given percentage of requests. Set percentage to a positive percentage (may be fractional).
+The sample filter will augment the filter and override filter for the given percentage of requests. Set percentage to a positive percentage (may be fractional). When sample levels are defined, the enabled levels are those defined by the union of the filter levels, the override levels and the sample levels.
+
+If the filter is null, this call will remove all samples.
 
 #### Level APIs
 
@@ -458,4 +493,4 @@ You can contact me (Michael O'Brien) on Twitter at: [@mobstream](https://twitter
 
 ### SenseDeep
 
-Please try best way to create serverless apps using the Serverless Developer Studio [SenseDeep](https://www.sensedeep.com/). It is integrated with SenseLogs and will control your filter levels with ease.
+Please try best way to create serverless apps using the Serverless Developer Studio [SenseDeep](https://www.sensedeep.com/). It is integrated with SenseLogs and will control your filter levels for Lambdas without needing to redeploy.
