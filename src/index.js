@@ -13,9 +13,9 @@
 
         let child = log.child(context)
 
-        log.addLevels(level, ...)
+        log.addLevels(levels)
         log.addDestination(fn)
-        log.setFilter(level, ...)
+        log.setFilter(levels)
 
         log.STREAM(message, context)
         log.info('messsage', {_stack_: true})

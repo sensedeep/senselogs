@@ -16,7 +16,7 @@ SenseLogs is designed to do this, simply and elegantly.
 ## SenseLogs Features
 
 * Extremely fast initialization time to shorten cold-starts.
-* Clean, readable small code base (< 500 lines).
+* Clean, readable small code base (~500 lines).
 * Emits logs in JSON with rich context.
 * Dynamic log control to change log levels and filters without redeploying.
 * Log snapshots to facilitate remote debugging without redeploying.
@@ -105,9 +105,30 @@ Use `setDestination` to replace all destinations.
 
 By default, SenseLogs messages do not include a timestamp because Lambda and other services typically add their own timestamps. If you need a timestamp, set the `params.timestamp` to true in the SenseLogs constructor.
 
+
+### Log Levels
+
+Use the default log levels: `data`, `debug`, `error`, `fatal`, `info`, `metrics`, `trace` and `warn` to emit messages.
+
+Log messages will be emitted when you all a log level method AND that level is enabled in the filter set. See filters below.
+
+You can also create custom levels for modules or services in your application, or you can use levels for horizontal traits like `testing`.
+
+When you define a new log level, a method of the same name will be added to the log instance. Consequently, log levels must be valid method names. For example:
+
+```javascript
+log.addLevels('auth')
+log.addFilter('auth')
+
+//  Use the 'auth' level
+log.auth('User Login', {user})
+```
+
 ### Filtering
 
-The default log filter will emit messages for the `fatal`, `error`, `metrics`, `info` and `warn`, levels. By default the `data`, `debug` and `trace` levels will be hidden.
+Log messages are emitted if the log level is enabled in the filter set.
+
+The default filter set will emit messages for the `fatal`, `error`, `metrics`, `info` and `warn`, levels. The default `data`, `debug` and `trace` levels will be hidden.
 
 You can change the level filter via `addFilter` or `setFilter` at any time.
 
@@ -118,29 +139,11 @@ log.addFilter(['data', 'debug'])
 This will enable messages for the `data` and `debug` levels.
 
 
-### Custom Levels
-
-You can use the default log levels: `data`, `debug`, `error`, `fatal`, `info`, `metrics`, `trace` and `warn`. And you can also define your own custom levels.
-
-You can create levels for modules or services in your application, or you can use levels to be horizontal traits like `testing`.
-
-When you define a new log level, a method of the same name will be added to the log instance. For example:
-
-```javascript
-log.addLevels('auth')
-log.addFilter('auth')
-
-log.auth('User Login', {user})
-```
-
-Consequently, log levels must be valid method names.
-
-
 ### Contexts
 
 For true `observability`, it is recommended that you log full information regarding request state in anticipation of future monitoring needs.
 
-Additional context information can be supplied to all log methods. The context is supplied as the second parameter.
+Additional context information can be supplied when calling a log level method. The context is supplied as the second parameter.
 
 ```javascript
 log.info('Basic message', {
@@ -155,7 +158,7 @@ This per-API context is merged with the global logger context. When you create t
 
 ```javascript
 const log = new SenseLogs({params}, {
-    //  Global context
+    //  Global context properties
 })
 ```
 
@@ -207,6 +210,8 @@ The environment variables are:
 * LOG_SAMPLE
 
 If you change these environment variables, the next time your Lambda functions is invoked, it will be loaded with the new environment variable values. In this manner, you can dynamically and immediately control your logging levels without modifying code or redeploying.
+
+The [SenseDeep serverless studio](https://www.sensedeep.com) provides a convenient interface to manage these filter settings and will update these environment variables on your Lambdas. 
 
 #### LOG_FILTER
 
@@ -310,7 +315,7 @@ The `options` parameter is of type `object` with the following properties:
 
 | Property | Type | Description |
 | -------- | :--: | ----------- |
-| destination | `string\|function` | Set to `json`, `console` or a function to be invoked as callback(logger, context). |
+| destination | `string\|function` | Set to `json`, `console` or an instance of an object with a `write` function to be invoked as write(logger, context). |
 | filter | `string\|array` | Set to a comma separated list or array of log levels that are enabled. |
 | levels | `string\|array` | Set to a comma separated list of possible log levels or an array of levels. Log levels are words that are made available as methods on the log instance. For example: `info`, `error`. |
 | name | `string` | Name for your app or service. The context.@module is set to this value by default. |
