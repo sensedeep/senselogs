@@ -12,12 +12,15 @@
         }
     },
     "keywords": [
-        "lambda",
         "serverless",
+        "log",
+        "logs",
+        "logging",
+        "library",
+        "lambda",
         "typescript",
         "aws",
-        "amazon",
-        "logging"
+        "amazon"
     ],
     "author": {
         "name": "Michael O'Brien",

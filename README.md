@@ -19,7 +19,6 @@ SenseLogs is designed to do this, simply and elegantly.
 * Clean, readable small code base (~500 lines).
 * Emits logs in JSON with rich context.
 * Dynamic log control to change log levels and filters without redeploying.
-* Log snapshots to facilitate remote debugging without redeploying.
 * Log sampling to emit increased logs for a percentage of requests.
 * Stack capture for uncaught exceptions.
 * Flexible log levels and filters.
@@ -211,7 +210,7 @@ The environment variables are:
 
 If you change these environment variables, the next time your Lambda functions is invoked, it will be loaded with the new environment variable values. In this manner, you can dynamically and immediately control your logging levels without modifying code or redeploying.
 
-The [SenseDeep serverless studio](https://www.sensedeep.com) provides a convenient interface to manage these filter settings and will update these environment variables on your Lambdas. 
+The [SenseDeep serverless studio](https://www.sensedeep.com) provides a convenient interface to manage these filter settings and will update these environment variables on your Lambdas.
 
 #### LOG_FILTER
 
@@ -479,7 +478,6 @@ If you are defining custom levels, you will need to augment the class definition
 
 ### References
 
-- [SenseLogs Samples](https://github.com/sensedeep/senselogs/tree/main/samples)
 - [SenseLogs Tests](https://github.com/sensedeep/senselogs/tree/main/test)
 - [SenseDeep Blog](https://www.sensedeep.com/blog/)
 - [SenseDeep Web Site](https://www.sensedeep.com/)
