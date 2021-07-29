@@ -1,36 +1,7 @@
 /*
-    senselogs - Simple, fast, dynamic logging for serverless
-
-    Usage:
-        import Log from 'senselogs'
-
-        let log = new Log({
-            name: 'app/module name',
-            levels: [ 'error', 'info', ...]            //  Default: data, debug, error, fatal, info, trace, warn
-            destination: 'json|console',
-            redact: fn
-        }, {context})
-
-        let child = log.child(context)
-
-        log.addLevels(levels)
-        log.addDestination(fn)
-        log.setFilter(levels)
-
-        log.STREAM(message, context)
-        log.info('messsage', {_stack_: true})
-
-        log.metrics(namespace, values, dimensions)
-
-        environment
-            LOG_FILTER=level,level,...
-            LOG_OVERRIDE=epoch:level,level,...
-            LOG_SAMPLE=percentage:level,level,...
-
-    Internal context properties: @exception, @module, @level, @stack, (@message if context.message provided)
+    Senselogs - Simple, fast, dynamic logging for serverless
  */
 
-const DefaultLevels = ['data', 'debug', 'error', 'fatal', 'info', 'trace', 'warn']
 const DefaultFilter = ['fatal', 'error', 'metrics', 'info', 'warn']
 
 export default class SenseLogs {
@@ -42,7 +13,6 @@ export default class SenseLogs {
     #name
     #redact
     #sample
-    #levels
     #timestamp
     #top
 
@@ -50,7 +20,6 @@ export default class SenseLogs {
         Options:
             destination
             filter
-            levels
             name
             redact
             timestamp
@@ -67,9 +36,6 @@ export default class SenseLogs {
             this.#override = {}
             this.#sample = {}
             this.#destinations = []
-            this.#levels = {}
-
-            this.addLevels(options.levels || DefaultLevels)
 
             let filter = options.filter || DefaultFilter
 
@@ -92,10 +58,13 @@ export default class SenseLogs {
 
             if (options.destination == 'console') {
                 this.addDestination(new ConsoleDest())
+
             } else if (options.destination == 'capture') {
                 this.addDestination(new CaptureDest())
+
             } else if (options.destination && typeof options.destination.write == 'function') {
                 this.addDestination(options.destination)
+
             } else {
                 //  Default to json
                 this.addDestination(new JsonDest())
@@ -106,48 +75,7 @@ export default class SenseLogs {
     }
 
     /*
-        Add a list of levels to the existing levels. Each level will create a method of the same name on this.
-     */
-    addLevels(levels) {
-        if (!levels) {
-            return this
-        }
-        if (!Array.isArray(levels)) {
-            levels = levels.split(',').map(l => l.trim())
-        }
-        for (let level of levels) {
-            if (level) {
-                if (this.#levels[level]) {
-                    throw new Error(`Level "${level}" already defined`)
-                }
-                this.#makeMethod(level)
-            }
-        }
-        return this
-    }
-
-    getLevels() {
-        return Object.keys(this.#levels)
-    }
-
-    setLevels(levels) {
-        this.#levels = {}
-        return this.addLevels(levels)
-    }
-
-    /*
-        Define a level method on this. The set of levels is unique for each child logger.
-     */
-    #makeMethod(level) {
-        if (DefaultLevels.indexOf(level) >= 0) {
-            this[level] = (message, context) => this.process(level, message, context)
-        }
-        this.#levels[level] = true
-    }
-
-    /*
-        Update the filter that specifies which levels should emit messages.
-        The filter is common to all child loggers.
+        Add a filter to enable specified channels.
     */
     addFilter(filter) {
         if (!filter) {
@@ -160,18 +88,14 @@ export default class SenseLogs {
                 filter = filter.split(',').map(f => f.trim())
             }
         }
-        for (let level of filter) {
-            if (level) {
-                this.#top.#filter[level] = true
+        for (let chan of filter) {
+            if (chan) {
+                this.#top.#filter[chan] = true
             }
         }
         return this
     }
 
-    /*
-        Update the filter that specifies which levels should emit messages. The filter is common to all child loggers.
-        If filter is null, revert to the default specified filter or DefaultFilter.
-    */
     setFilter(filter) {
         this.#top.#filter = {}
         if (filter) {
@@ -206,9 +130,9 @@ export default class SenseLogs {
         if (!Array.isArray(filter)) {
             filter = filter.split(',').map(f => f.trim())
         }
-        for (let level of filter) {
-            if (level) {
-                this.#top.#override[level] = expire
+        for (let chan of filter) {
+            if (chan) {
+                this.#top.#override[chan] = expire
             }
         }
         return this
@@ -232,15 +156,15 @@ export default class SenseLogs {
             filter = filter.split(',').map(f => f.trim())
         }
         if (rate > 0) {
-            for (let level of filter) {
-                if (level) {
-                    this.#top.#sample[level] = {count: 0, total: 100 / rate}
+            for (let chan of filter) {
+                if (chan) {
+                    this.#top.#sample[chan] = {count: 0, total: 100 / rate}
                 }
             }
         } else {
-            for (let level of filter) {
-                if (level) {
-                    this.#top.#sample[level] = null
+            for (let chan of filter) {
+                if (chan) {
+                    this.#top.#sample[chan] = null
                 }
             }
         }
@@ -248,16 +172,12 @@ export default class SenseLogs {
     }
 
     /*
-        Create a child logger. This inherits the context and levels.
+        Create a child logger. This inherits the context and channels.
     */
     child(context) {
         context = context ? Object.assign({}, this.context, context) : this.context
         let log = new SenseLogs({child: true}, context)
         log.#top = this.#top
-        log.#levels = Object.assign({}, this.#levels)
-        for (let level of Object.keys(this.#levels)) {
-            log.#makeMethod(level)
-        }
         return log
     }
 
@@ -297,16 +217,16 @@ export default class SenseLogs {
     }
 
     /*
-        Determine if a level should emit a log message
+        Determine if a channel should emit a log message
     */
-    shouldLog(level) {
+    shouldLog(chan) {
         let top = this.#top
-        if (top.#filter[level] == null) {
-            if (top.#override[level] && top.#override[level] < Date.now()) {
-                top.#override[level] = null
+        if (top.#filter[chan] == null) {
+            if (top.#override[chan] && top.#override[chan] < Date.now()) {
+                top.#override[chan] = null
             }
-            if (top.#override[level] == null) {
-                let sample = top.#sample[level]
+            if (top.#override[chan] == null) {
+                let sample = top.#sample[chan]
                 if (sample == null) {
                     return false
                 }
@@ -322,8 +242,8 @@ export default class SenseLogs {
     /*
         Process a log message and optionally emit
     */
-    process(level, message, context) {
-        if (!this.shouldLog(level)) {
+    process(chan, message, context) {
+        if (!this.shouldLog(chan)) {
             return
         }
         let exception
@@ -334,7 +254,7 @@ export default class SenseLogs {
         } else {
             context = Object.assign({}, context)
         }
-        context['@level'] = level
+        context['@chan'] = chan
         context['@module'] = context['@module'] || this.#top.#name
 
         if (this.#timestamp) {
@@ -375,6 +295,14 @@ export default class SenseLogs {
         this.write(context)
     }
 
+    data(message, context)  { this.process('data', message, context) }
+    debug(message, context) { this.process('debug', message, context) }
+    error(message, context) { this.process('error', message, context) }
+    fatal(message, context) { this.process('fatal', message, context) }
+    info(message, context)  { this.process('info', message, context) }
+    trace(message, context) { this.process('trace', message, context) }
+    warn(message, context)  { this.process('warn', message, context) }
+
     /*
         Write a log message to the configured destinations
     */
@@ -393,16 +321,16 @@ export default class SenseLogs {
     }
 
     /*
-        Convenience API to emit a log message for a given level.
+        Convenience API to emit a log message for a given channel.
     */
-    emit(level, message, context) {
-        this.process(level, message, context)
+    emit(chan, message, context) {
+        this.process(chan, message, context)
     }
 
     /*
         Emit a CloudWatch metic using the CloudWatch EMF format.
 
-        metrics('SenseDeep/App', {UserSessions: 1}, dimensions)
+        metrics('MyCompany/MyApp', {UserSessions: 1}, dimensions)
     */
     metrics(namespace, values, dimensions = [[]]) {
         if (!this.#top.#filter.metrics) {
@@ -415,7 +343,7 @@ export default class SenseLogs {
         let keys = Object.keys(values).filter(v => dimensions[0].indexOf(v) < 0)
         let metrics = keys.map(v => {return {Name: v}})
         let context = {
-            '@level': 'metrics',
+            '@chan': 'metrics',
             '@namespace': namespace,
             '@metrics': keys,
             message: `Metrics for ${namespace} ` + JSON.stringify(Object.assign({
@@ -468,8 +396,8 @@ export default class SenseLogs {
 */
 class JsonDest {
     write(log, context) {
-        let level = context['@level']
-        if (level == 'metrics') {
+        let chan = context['@chan']
+        if (chan == 'metrics') {
             console.log(context.message)
         } else {
             console.log(JSON.stringify(context) + '\n')
@@ -489,8 +417,8 @@ class CaptureDest {
     }
 
     write(log, context) {
-        let level = context['@level']
-        if (level == 'metrics') {
+        let chan = context['@chan']
+        if (chan == 'metrics') {
             this.buffer.push(context.message)
         } else {
             this.buffer.push(context)
@@ -506,30 +434,30 @@ class ConsoleDest {
         let message = context.message
         let module = context['@module']
         let time = this.getTime()
-        let level = context['@level']
+        let chan = context['@chan']
         let exception = context['@exception']
         if (exception) {
-            console.error(`${time}: ${module}: ${level}: ${message}: ${exception.message}`)
+            console.error(`${time}: ${module}: ${chan}: ${message}: ${exception.message}`)
             console.error(exception.stack)
             console.error(JSON.stringify(context, null, 4) + '\n')
 
-        } else if (level == 'error') {
-            console.error(`${time}: ${module}: ${level}: ${message}`)
+        } else if (chan == 'error') {
+            console.error(`${time}: ${module}: ${chan}: ${message}`)
             if (Object.keys(context).length > 3) {
                 console.error(JSON.stringify(context, null, 4) + '\n')
             }
 
-        } else if (level == 'metrics') {
+        } else if (chan == 'metrics') {
             console.log(context.message + '\n')
 
-        } else if (level == 'trace') {
-            console.log(`${time}: ${module}: ${level}: ${message}`)
+        } else if (chan == 'trace') {
+            console.log(`${time}: ${module}: ${chan}: ${message}`)
             console.log(JSON.stringify(context, null, 4) + '\n')
 
         } else {
-            console.log(`${time}: ${module}: ${level}: ${message}`)
+            console.log(`${time}: ${module}: ${chan}: ${message}`)
             if (Object.keys(context).length > 3) {
-                //  More than: message, @module and @level
+                //  More than: message, @module and @chan
                 console.log(JSON.stringify(context, null, 4) + '\n')
             }
         }

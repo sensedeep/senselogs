@@ -12,7 +12,7 @@ test('Mock', async() => {
     let result = log.flush()
     expect(result.length).toBe(1)
     expect(result[0]).toMatchObject({
-        '@level': 'info',
+        '@chan': 'info',
         '@module': 'test',
         'message': 'Hello World'
     })

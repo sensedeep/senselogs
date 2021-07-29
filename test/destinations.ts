@@ -47,6 +47,10 @@ test('Console', async() => {
     log.info('Hello World')
     expect(true).toBe(true)
 
+    log.error('Hello World')
+    expect(true).toBe(true)
+
+
     console.log = saveLog
     console.error = saveError
 })

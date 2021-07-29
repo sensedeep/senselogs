@@ -12,7 +12,7 @@ test('Context messages', async() => {
     let result = log.flush()
     expect(result.length).toBe(1)
     expect(result[0]).toMatchObject({
-        '@level': 'info',
+        '@chan': 'info',
         '@message': 'embedded',
         'message': 'Hello World',
     })
@@ -25,7 +25,7 @@ test('Object message', async() => {
     let result = log.flush()
     expect(result.length).toBe(1)
     expect(result[0]).toMatchObject({
-        '@level': 'info',
+        '@chan': 'info',
         'message': '{"greeting":"Hello World"}',
     })
 })

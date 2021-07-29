@@ -9,19 +9,19 @@ SenseLogs is a simple, flexible, dynamic, blazing fast log library designed excl
 
 While there are many other good logging libraries that claim to be fast, they were not designed `for` serverless and so are bigger and slower than necessary.
 
-Furthermore, serverless apps have special requirments like minimizing cold-start time, dynamic log level and filtering control without redploying and being able to capture detailed context and request information without modifying your functions.
+Furthermore, serverless apps have special requirments like minimizing cold-start time, dynamic log filtering control without redploying and being able to capture detailed context and request information without modifying your functions.
 
 SenseLogs is designed to do this, simply and elegantly.
 
 ## SenseLogs Features
 
 * Extremely fast initialization time to shorten cold-starts.
-* Clean, readable small code base (~500 lines).
+* Clean, readable small code base (<500 lines).
 * Emits logs in JSON with rich context.
-* Dynamic log control to change log levels and filters without redeploying.
+* Dynamic log control to change log filters without redeploying.
 * Log sampling to emit increased logs for a percentage of requests.
 * Stack capture for uncaught exceptions.
-* Flexible log levels and filters.
+* Flexible log channels and filters.
 * Inheriting child log instances for per-module logging.
 * For local debugging, emits in human readable formats.
 * Easily emit CloudWatch custom metrics using EMF.
@@ -69,7 +69,8 @@ This will emit
 }
 ```
 
-SenseLogs provides standard methods for log levels and you can easily extend with your own. For example:
+SenseLogs organizes log messages via channels which are simple names given to classify log message types.
+SenseLogs provides methods for standard channels like: 'debug', 'error', 'warn' and 'info'. You can easily extend upon the basic set of channels with your own. For example:
 
 ```javascript
 log.error('Bad things happen sometimes')
@@ -78,8 +79,7 @@ log.error(new Error('Invalid request state'), {request})
 log.debug('The queue was empty')
 log.trace('Database request', {request})
 
-log.addLevel('custom')
-log.emit('custom', 'My custom level')
+log.emit('custom-channel', 'My custom channel')
 ```
 
 ### Output Format
@@ -105,44 +105,43 @@ Use `setDestination` to replace all destinations.
 By default, SenseLogs messages do not include a timestamp because Lambda and other services typically add their own timestamps. If you need a timestamp, set the `params.timestamp` to true in the SenseLogs constructor.
 
 
-### Log Levels
+### Log Channels
 
-Use the default log levels: `data`, `debug`, `error`, `fatal`, `info`, `metrics`, `trace` and `warn` to emit messages.
+SenseDeep defines the following default log channels: `data`, `debug`, `error`, `fatal`, `info`, `metrics`, `trace` and `warn`. These have corresponding log methods of the same name.
 
-Log messages will be emitted when you all a log level method AND that level is enabled in the filter set. See filters below.
+Log messages will be emitted when you call a log channel method AND that channel is enabled in the filter set. See filters below.
 
-You can also create custom levels for modules or services in your application, or you can use levels for horizontal traits like `testing`.
+You can also create custom channels for modules or services in your application, or you can use channels for horizontal traits like `testing`.
 
-When you define a new log level, a method of the same name will be added to the log instance. Consequently, log levels must be valid method names. For example:
+For example:
 
 ```javascript
-log.addLevels('auth')
 log.addFilter('auth')
 
-//  Use the 'auth' level
+//  Use the 'auth' channel
 log.emit('auth', 'User Login', {user})
 ```
 
 ### Filtering
 
-Log messages are emitted if the log level is enabled in the filter set.
+Log messages are emitted if the log channel is enabled in the filter set.
 
-The default filter set will emit messages for the `fatal`, `error`, `metrics`, `info` and `warn`, levels. The default `data`, `debug` and `trace` levels will be hidden.
+The default filter set will emit messages for the `fatal`, `error`, `metrics`, `info` and `warn`, channels. The default `data`, `debug` and `trace` channels will be hidden.
 
-You can change the level filter via `addFilter` or `setFilter` at any time.
+You can change the channel filter via `addFilter` or `setFilter` at any time.
 
 ```javascript
 log.addFilter(['data', 'debug'])
 ```
 
-This will enable messages for the `data` and `debug` levels.
+This will enable messages for the `data` and `debug` channels.
 
 
 ### Contexts
 
 For true `observability`, it is recommended that you log full information regarding request state in anticipation of future monitoring needs.
 
-Additional context information can be supplied when calling a log level method. The context is supplied as the second parameter.
+Additional context information can be supplied when calling a log channel method or the `emit` methods. The context is supplied as the second parameter.
 
 ```javascript
 log.info('Basic message', {
@@ -175,7 +174,7 @@ SenseLogs accumlates all the context information into a single context that is p
 
 ### Child Instances
 
-If you have modules or subsystems, it is often useful for them to derive their own child log instances which inherit context and levels from their parent instance. Then the child can modify the context and levels to suit.
+If you have modules or subsystems, it is often useful for them to derive their own child log instances which inherit context and channels from their parent instance. Then the child can modify the context and channels to suit.
 
 ```javascript
 const child = log.child({
@@ -208,13 +207,13 @@ The environment variables are:
 * LOG_OVERRIDE
 * LOG_SAMPLE
 
-If you change these environment variables, the next time your Lambda functions is invoked, it will be loaded with the new environment variable values. In this manner, you can dynamically and immediately control your logging levels without modifying code or redeploying.
+If you change these environment variables, the next time your Lambda functions is invoked, it will be loaded with the new environment variable values. In this manner, you can dynamically and immediately control your logging channels without modifying code or redeploying.
 
 The [SenseDeep serverless studio](https://www.sensedeep.com) provides a convenient interface to manage these filter settings and will update these environment variables on your Lambdas.
 
 #### LOG_FILTER
 
-The LOG_FILTER is read by the SenseLogs constructor to invoke `setFilter` to define the default log filter. Set it to a comma separated list of log levels. For example:
+The LOG_FILTER is read by the SenseLogs constructor to invoke `setFilter` to define the default log filter. Set it to a comma separated list of log channels. For example:
 
 ```shell
 LOG_FILTER=fatal,error,info
@@ -222,7 +221,7 @@ LOG_FILTER=fatal,error,info
 
 #### LOG_OVERRIDE
 
-The LOG_OVERRIDE is read by SenseLogs to invoke `setOverride` to define an override log filter that will apply for a limited duration of time. Set it to a comma separated list of log levels that is prefixed by an expiry time as a Unix epoch (seconds since Jan 1 1970). For example:
+The LOG_OVERRIDE is read by SenseLogs to invoke `setOverride` to define an override log filter that will apply for a limited duration of time. Set it to a comma separated list of log channels that is prefixed by an expiry time as a Unix epoch (seconds since Jan 1 1970). For example:
 
 ```shell
 LOG_OVERRIDE=1626409530045:data,trace
@@ -230,13 +229,13 @@ LOG_OVERRIDE=1626409530045:data,trace
 
 ### LOG_SAMPLE
 
-The LOG_SAMPLE is used to invoke `setSample` to define an additional log filter that will apply for percentage of requests. Set it to a comma separated list of log levels that is prefixed by a percentage. For example:
+The LOG_SAMPLE is used to invoke `setSample` to define an additional log filter that will apply for percentage of requests. Set it to a comma separated list of log channels that is prefixed by a percentage. For example:
 
 ```shell
 LOG_SAMPLE=1%:trace
 ```
 
-This will cause 1% of log requests to the given log levels to be logged. This is useful to ensure you have a complete trace of some requests at all times without needing to redeploy or reconfigure.
+This will cause 1% of log requests to the given log channels to be logged. This is useful to ensure you have a complete trace of some requests at all times without needing to redeploy or reconfigure.
 
 ### CloudWatch Metrics and EMF
 
@@ -315,8 +314,7 @@ The `options` parameter is of type `object` with the following properties:
 | Property | Type | Description |
 | -------- | :--: | ----------- |
 | destination | `string\|function` | Set to `json`, `console` or an instance of an object with a `write` function to be invoked as write(logger, context). |
-| filter | `string\|array` | Set to a comma separated list or array of log levels that are enabled. |
-| levels | `string\|array` | Set to a comma separated list of possible log levels or an array of levels. Log levels are words that are made available as methods on the log instance. For example: `info`, `error`. |
+| filter | `string\|array` | Set to a comma separated list or array of log channels that are enabled. |
 | name | `string` | Name for your app or service. The context.@module is set to this value by default. |
 | redact | `function` | Callback function invoked prior to passing the context data to the logger. Invoked as `callback(context)`|
 | timestamp | `boolean` | Set to true to add a context.timestamp to the log context message.|
@@ -329,7 +327,6 @@ For example:
 const log = new SenseLogs({
     destination: 'console',
     filter: 'fatal, error',
-    levels: 'fatal, error, info',
     name: 'MyApp',
     redact: (context) => { console.log(JSON.stringify(context)) },
     timestamp: true,
@@ -343,7 +340,7 @@ SenseLogs creates some reserved properties on the log message context. These pro
 
 * @exception &mdash; Set if an `Error` object is passed to SenseLogs.
 * @module &mdash; Set to the `name` given to the SenseLogs constructor or the `@module` context property on a child instance.
-* @level &mdash; Set to the log level (info, error, ...).
+* @chan &mdash; Set to the log channel for the current log message (info, error, ...).
 * @stack &mdash; Set to a captured stack backtrace.
 * @message &mdash; If a context.message is supplied in addition to the API message, the context message will be saved as `@message`.
 
@@ -362,28 +359,22 @@ Add the given destination function to the set of destinations. The destination i
 dest(logger: SenseLogs, context: object)
 ```
 
-#### addLevels(levels: string | array)
-
-Add the given levels to the set of levels. The levels property may be a comma separated string or an array of levels.
-A level is a simple word that describes the level. The standard levels are available as methods on the log instance. Custom levels may be utilized via the `emit` method which takes the level as its first parameter. For example, a level of `highlight` would be used as `log.emit('highlight')` to log at the `highlight` level.
-
-The log level is added to the context when a message is emitted as `@level`.
 
 #### addFilter(filter: string | array)
 
-Add the filter levels described by the given filter to the current filter set. The filter may be a comma separated string or an array of levels.
+Enable the log channels described by the given filter in the current filter set. The current filter specifies the log channels that are enabled to emit log data.
 
-The current filter specifies the levels that enabled to emit log data.
+The filter may be a comma separated string or an array of channels. Set `filter` to "default" to revert to the default filter set.
+
 
 #### child(context: {}): SenseLogs
 
-Create a child log instance derived from the parent log. The child context has its own context inherited from the parent log instance and it has its own set of log levels.
+Create a child log instance derived from the parent log. The child context has its own context inherited from the parent log instance and it has its own set of log channels.
 
-Children and parent instances share a single, common filter of enabled log levels.
+Children and parent instances share a single, common filter of enabled log channels.
 
 ```javascript
 const child = log.child({brush: 'green'})
-child.addLevel('color')
 child.emit('color', 'Favorite color')
 ```
 
@@ -392,13 +383,9 @@ child.emit('color', 'Favorite color')
 This will clear the context for the log instance.
 
 
-#### getLevels()
-
-Return an array of current log levels.
-
 #### getFilter()
 
-Return an array of the current filter levels.
+Return an array of the current filter channels.
 
 
 #### getOverride()
@@ -410,9 +397,10 @@ Return a map containing the current override definition.
 Return a map containing the current sample definition.
 
 
-#### emit(level: string, message: string, context: {})
+#### emit(channel: string, message: string, context: {})
 
-Convenience method that takes the level as the first argument
+Convenience method that takes the channel as the first argument.
+
 
 #### metrics(namespace: string, values: [], dimensions = [[]])
 
@@ -424,40 +412,32 @@ The values is an array of metric values to submit. Dimensions are the optional C
 
 #### setFilter(filter: string | array)
 
-Set the filter levels described by the given filter. The filter may be a comma separated string or an array of levels.
+Set the filter channels described by the given filter parameter. The current filter set specifies the channels that enabled to emit log data.
 
-The current filter set specifies the levels that enabled to emit log data. If filter is null, this call will remove all filter levels. If filter is set to 'default', the filter levels will be restored to the default defined via the constructor.
+The filter may be a comma separated string or an array of channels. If filter is null, this call will remove all filter channels. If filter is set to 'default', the filter channels will be restored to the default defined via the constructor.
 
-
-#### setLevels(levels: string | array)
-
-Set the given levels as the set of levels. The levels property may be a comma separated string or an array of levels.
-A level is a simple word that may be published as a method on the logger instance. For example, a level of `highlight` would expose the
-`log.highlight()` method to log at the `highlight` level.
-
-The log level is added to the context when a message is emitted as `@level`.
 
 
 #### setOverride(filter: string | array, expire: number)
 
-Set the override filter levels described by the given filter. The override filter will augment the default filter with additional levels until the `expire` time has been reached. When override levels are defined, the enabled levels are those defined by the union of the filter levels and the override levels.
+Set the override filter channels described by the given filter. The override filter will augment the default filter with additional channels until the `expire` time has been reached. When override channels are defined, the enabled channels are those defined by the union of the filter channels and the override channels.
 
-The filter may be a comma separated string or an array of levels. If the filter is null, this call will clear all overrides.
+The filter may be a comma separated string or an array of channels. If the filter is null, this call will clear all overrides.
 
 Expire is a Unix epoch date (seconds since Jan 1 1970).
 
 
 #### setSample(filter: string | array, percentage: number)
 
-Set the sampling filter levels described by the given filter. The filter may be a comma separated string or an array of levels.
+Set the sampling filter channels described by the given filter. The filter may be a comma separated string or an array of channels.
 
-The sample filter will augment the filter and override filter for the given percentage of requests. Set percentage to a positive percentage (may be fractional). When sample levels are defined, the enabled levels are those defined by the union of the filter levels, the override levels and the sample levels.
+The sample filter will augment the filter and override filter for the given percentage of requests. Set percentage to a positive percentage (may be fractional). When sample channels are defined, the enabled channels are those defined by the union of the filter channels, the override channels and the sample channels.
 
 If the filter is null, this call will remove all samples.
 
 #### Level APIs
 
-The standard levels and method signatures are:
+The standard channels and method signatures are:
 
 ```typescript
     data(message: string, context: {}): void;
@@ -467,9 +447,8 @@ The standard levels and method signatures are:
     info(message: string, context: {}): void;
     trace(message: string, context: {}): void;
     warn(message: string, context: {}): void;
+    emit(channel: string, message: string, context: {}): void;
 ```
-
-As you define additional levels via addLevels or setLevels, additional methods will be added to your logger instance.
 
 ### References
 
@@ -491,4 +470,4 @@ You can contact me (Michael O'Brien) on Twitter at: [@mobstream](https://twitter
 
 ### SenseDeep
 
-Please try best way to create serverless apps using the Serverless Developer Studio [SenseDeep](https://www.sensedeep.com/). It is integrated with SenseLogs and will control your filter levels for Lambdas without needing to redeploy.
+Please try best way to create serverless apps using the Serverless Developer Studio [SenseDeep](https://www.sensedeep.com/). It is integrated with SenseLogs and will control your filter channels for Lambdas without needing to redeploy.

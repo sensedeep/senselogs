@@ -12,7 +12,7 @@ test('Constructor: destination, name', async() => {
     let result = log.flush()
     expect(result.length).toBe(1)
     expect(result[0]).toMatchObject({
-        '@level': 'info',
+        '@chan': 'info',
         '@module': 'test',
         'message': 'Hello World'
     })
@@ -24,7 +24,7 @@ test('Constructor: timestamp', async() => {
 
     let result: any = log.flush()[0]
     expect(result).toMatchObject({
-        '@level': 'info',
+        '@chan': 'info',
         '@module': 'test',
         'message': 'Hello World'
     })
@@ -40,7 +40,7 @@ test('Constructor: filter', async() => {
     log.error('Some error')
     let result: any = log.flush()[0]
     expect(result).toMatchObject({
-        '@level': 'error',
+        '@chan': 'error',
         'message': 'Some error'
     })
 
@@ -60,7 +60,7 @@ test('Constructor: levels', async() => {
     log.emit('custom', 'Custom message')
     let result: any = log.flush()[0]
     expect(result).toMatchObject({
-        '@level': 'custom',
+        '@chan': 'custom',
         'message': 'Custom message'
     })
 })
