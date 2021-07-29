@@ -79,7 +79,7 @@ log.debug('The queue was empty')
 log.trace('Database request', {request})
 
 log.addLevel('custom')
-log.custom('My custom level')
+log.emit('custom', 'My custom level')
 ```
 
 ### Output Format
@@ -120,7 +120,7 @@ log.addLevels('auth')
 log.addFilter('auth')
 
 //  Use the 'auth' level
-log.auth('User Login', {user})
+log.emit('auth', 'User Login', {user})
 ```
 
 ### Filtering
@@ -347,6 +347,7 @@ SenseLogs creates some reserved properties on the log message context. These pro
 * @stack &mdash; Set to a captured stack backtrace.
 * @message &mdash; If a context.message is supplied in addition to the API message, the context message will be saved as `@message`.
 
+
 ### Methods
 
 #### addContext(contexts: object | array)
@@ -364,8 +365,7 @@ dest(logger: SenseLogs, context: object)
 #### addLevels(levels: string | array)
 
 Add the given levels to the set of levels. The levels property may be a comma separated string or an array of levels.
-A level is a simple word that may be published as a method on the logger instance. For example, a level of `highlight` would expose the
-`log.highlight()` method to log at the `highlight` level.
+A level is a simple word that describes the level. The standard levels are available as methods on the log instance. Custom levels may be utilized via the `emit` method which takes the level as its first parameter. For example, a level of `highlight` would be used as `log.emit('highlight')` to log at the `highlight` level.
 
 The log level is added to the context when a message is emitted as `@level`.
 
@@ -384,7 +384,7 @@ Children and parent instances share a single, common filter of enabled log level
 ```javascript
 const child = log.child({brush: 'green'})
 child.addLevel('color')
-child.color('Favorite color')
+child.emit('color', 'Favorite color')
 ```
 
 #### clearContext()
@@ -429,7 +429,6 @@ Set the filter levels described by the given filter. The filter may be a comma s
 The current filter set specifies the levels that enabled to emit log data. If filter is null, this call will remove all filter levels. If filter is set to 'default', the filter levels will be restored to the default defined via the constructor.
 
 
-
 #### setLevels(levels: string | array)
 
 Set the given levels as the set of levels. The levels property may be a comma separated string or an array of levels.
@@ -471,10 +470,6 @@ The standard levels and method signatures are:
 ```
 
 As you define additional levels via addLevels or setLevels, additional methods will be added to your logger instance.
-
-### Typescript and Custom Levels
-
-If you are defining custom levels, you will need to augment the class definition to add your custom level method signatures.
 
 ### References
 
