@@ -117,8 +117,8 @@ export default class SenseLogs {
         }
         for (let level of levels) {
             if (level) {
-                if (this[level] != null) {
-                    throw new Error(`Level method "${level}" already defined on log`)
+                if (this.#levels[level]) {
+                    throw new Error(`Level "${level}" already defined`)
                 }
                 this.#makeMethod(level)
             }
@@ -139,7 +139,9 @@ export default class SenseLogs {
         Define a level method on this. The set of levels is unique for each child logger.
      */
     #makeMethod(level) {
-        this[level] = (message, context) => this.process(level, message, context)
+        if (DefaultLevels.indexOf(level) >= 0) {
+            this[level] = (message, context) => this.process(level, message, context)
+        }
         this.#levels[level] = true
     }
 
@@ -416,7 +418,7 @@ export default class SenseLogs {
             '@level': 'metrics',
             '@namespace': namespace,
             '@metrics': keys,
-            message: JSON.stringify(Object.assign({
+            message: `Metrics for ${namespace} ` + JSON.stringify(Object.assign({
                 _aws: {
                     Timestamp: Date.now(),
                     CloudWatchMetrics: [{
@@ -513,7 +515,9 @@ class ConsoleDest {
 
         } else if (level == 'error') {
             console.error(`${time}: ${module}: ${level}: ${message}`)
-            console.error(JSON.stringify(context, null, 4) + '\n')
+            if (Object.keys(context).length > 3) {
+                console.error(JSON.stringify(context, null, 4) + '\n')
+            }
 
         } else if (level == 'metrics') {
             console.log(context.message + '\n')
