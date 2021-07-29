@@ -268,6 +268,7 @@ export default class SenseLogs {
         if (context.message) {
             context['@message'] = context.message
         }
+
         if (message instanceof Error) {
             exception = message
             message = exception.message
@@ -279,11 +280,11 @@ export default class SenseLogs {
         } else if (typeof message != 'string') {
             message = JSON.stringify(message)
         }
-
         if (exception) {
             context['@exception'] = exception
             message = message || exception.message
         }
+
         context.message = message
 
         context = Object.assign({}, this.context, context)
@@ -398,9 +399,9 @@ class JsonDest {
     write(log, context) {
         let chan = context['@chan']
         if (chan == 'metrics') {
-            console.log(context.message)
+            process.stdout.write(context.message + '\n')
         } else {
-            console.log(JSON.stringify(context) + '\n')
+            process.stdout.write(JSON.stringify(context) + '\n')
         }
     }
 }
@@ -437,28 +438,28 @@ class ConsoleDest {
         let chan = context['@chan']
         let exception = context['@exception']
         if (exception) {
-            console.error(`${time}: ${module}: ${chan}: ${message}: ${exception.message}`)
-            console.error(exception.stack)
-            console.error(JSON.stringify(context, null, 4) + '\n')
+            process.stderr.write(`${time}: ${module}: ${chan}: ${message}: ${exception.message}` + '\n')
+            process.stderr.write(exception.stack + '\n')
+            process.stderr.write(JSON.stringify(context, null, 4) + '\n')
 
         } else if (chan == 'error') {
-            console.error(`${time}: ${module}: ${chan}: ${message}`)
+            process.stderr.write(`${time}: ${module}: ${chan}: ${message}` + '\n')
             if (Object.keys(context).length > 3) {
-                console.error(JSON.stringify(context, null, 4) + '\n')
+                process.stderr.write(JSON.stringify(context, null, 4) + '\n')
             }
 
         } else if (chan == 'metrics') {
-            console.log(context.message + '\n')
+            process.stdout.write(context.message + '\n')
 
         } else if (chan == 'trace') {
-            console.log(`${time}: ${module}: ${chan}: ${message}`)
-            console.log(JSON.stringify(context, null, 4) + '\n')
+            process.stdout.write(`${time}: ${module}: ${chan}: ${message}` + '\n')
+            process.stdout.write(JSON.stringify(context, null, 4) + '\n')
 
         } else {
-            console.log(`${time}: ${module}: ${chan}: ${message}`)
+            process.stdout.write(`${time}: ${module}: ${chan}: ${message}` + '\n')
             if (Object.keys(context).length > 3) {
                 //  More than: message, @module and @chan
-                console.log(JSON.stringify(context, null, 4) + '\n')
+                process.stdout.write(JSON.stringify(context, null, 4) + '\n')
             }
         }
     }

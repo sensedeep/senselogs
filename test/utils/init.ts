@@ -1,4 +1,18 @@
+import process from 'process'
+import {Stream} from 'stream'
 import SenseLogs from '../../src/index'
+
+function nop() {}
+
+function output(stream, where?: Stream): any {
+    let prior = process.stdout.write
+    if (where) {
+        process[stream].write = where as any
+    } else {
+        process[stream].write = nop as any
+    }
+    return prior
+}
 
 const dump = (...args) => {
     let s = []
@@ -23,4 +37,4 @@ const delay = async (time) => {
     })
 }
 
-export {SenseLogs, delay, dump, print}
+export {SenseLogs, delay, dump, output, print}

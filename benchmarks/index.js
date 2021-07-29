@@ -1,7 +1,7 @@
 
 import fs from 'fs'
 import Pino from 'pino'
-import SenseLogs from '../src/index.js'
+import SenseLogs from 'senselogs'
 
 const Iter = 2000000
 

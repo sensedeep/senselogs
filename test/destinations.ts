@@ -1,28 +1,24 @@
 /*
     json.ts -
  */
-import {SenseLogs, print, dump, delay} from './utils/init'
+import {SenseLogs, print, dump, delay, output} from './utils/init'
 
 // jest.setTimeout(7200 * 1000)
 
 test('JSON', async() => {
     const log = new SenseLogs({destination: 'json'})
 
-    let save = console.log
-    console.log = () => {}
-
+    let save = output('stdout')
     log.info('Hello World')
     expect(true).toBe(true)
-    console.log = save
+    output('stdout', save)
 })
 
 test('Console', async() => {
     const log = new SenseLogs({destination: 'console'})
 
-    let saveLog = console.log
-    let saveError = console.log
-    console.log = () => {}
-    console.error = () => {}
+    let saveLog = output('stdout')
+    let saveError = output('stderr')
 
     log.info('Hello World')
     expect(true).toBe(true)
@@ -50,9 +46,8 @@ test('Console', async() => {
     log.error('Hello World')
     expect(true).toBe(true)
 
-
-    console.log = saveLog
-    console.error = saveError
+    output('stdout', saveLog)
+    output('stderr', saveError)
 })
 
 test('Destination', async() => {

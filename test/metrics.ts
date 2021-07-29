@@ -1,7 +1,7 @@
 /*
     metrics.ts -
  */
-import {SenseLogs, print, dump, delay} from './utils/init'
+import {SenseLogs, print, dump, delay, output} from './utils/init'
 
 // jest.setTimeout(7200 * 1000)
 
@@ -18,12 +18,9 @@ test('metrics', async() => {
 test('metrics via JSON', async() => {
     const log = new SenseLogs()
 
-    let save = console.log
-    console.log = () => {}
-
+    let save = output('stdout')
     log.metrics('Acme/Rockets', {sessions: 1})
-
-    console.log = save
+    output('stdout', save)
 })
 
 test('metrics when disabled', async() => {
