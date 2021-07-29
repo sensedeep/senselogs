@@ -70,7 +70,8 @@ This will emit
 ```
 
 SenseLogs organizes log messages via channels which are simple names given to classify log message types.
-SenseLogs provides methods for standard channels like: 'debug', 'error', 'warn' and 'info'. You can easily extend upon the basic set of channels with your own. For example:
+
+SenseLogs provides methods for standard channels like: debug, error, warn and info. You can easily extend upon the basic set of channels with your own. For example:
 
 ```javascript
 log.error('Bad things happen sometimes')
@@ -84,9 +85,10 @@ log.emit('custom-channel', 'My custom channel')
 
 ### Output Format
 
-By default SenseLogs will emit log messages in JSON format to the console. Using JSON format is highly recommended. You should add rich context to your logging messages and use a log management solution like [SenseDeep](https://www.sensedeep.com) that is designed to handle JSON log messages with ease.
+By default SenseLogs will emit log messages in JSON format to the console and using JSON format is highly recommended. However, you can also configure the logger to emit human readable output by setting the destination to 'console'
 
-You can also configure the logger to emit human readable output by setting the destination to 'console'
+You should add rich context to your logging messages and use a log management solution like [SenseDeep](https://www.sensedeep.com) that is designed to handle JSON log messages with ease.
+
 
 ```javascript
 const log = new SenseLogs({destination: 'console'})
@@ -100,7 +102,7 @@ log.addDestination({write: (logger, context) =>
 }})
 ```
 
-Use `setDestination` to replace all destinations.
+Use the `setDestination` API to replace all destinations.
 
 By default, SenseLogs messages do not include a timestamp because Lambda and other services typically add their own timestamps. If you need a timestamp, set the `params.timestamp` to true in the SenseLogs constructor.
 
@@ -111,11 +113,12 @@ SenseDeep defines the following default log channels: `data`, `debug`, `error`, 
 
 Log messages will be emitted when you call a log channel method AND that channel is enabled in the filter set. See filters below.
 
-You can also create custom channels for modules or services in your application, or you can use channels for horizontal traits like `testing`.
+You can also use custom channels for modules or services in your application, or you can use channels for horizontal traits like `testing`. You don't need to pre-create the channel, simply use it with the `emit` method.
 
 For example:
 
 ```javascript
+//  Enable output for the auth channel
 log.addFilter('auth')
 
 //  Use the 'auth' channel
@@ -124,24 +127,22 @@ log.emit('auth', 'User Login', {user})
 
 ### Filtering
 
-Log messages are emitted if the log channel is enabled in the filter set.
+Log messages are emitted if the log channel is enabled in the current log filter.
 
-The default filter set will emit messages for the `fatal`, `error`, `metrics`, `info` and `warn`, channels. The default `data`, `debug` and `trace` channels will be hidden.
-
-You can change the channel filter via `addFilter` or `setFilter` at any time.
+The default log filter will emit messages for the `fatal`, `error`, `metrics`, `info` and `warn`, channels. The `data`, `debug` and `trace` channels will be hidden by default. However, you can change the channel filter via `addFilter` or `setFilter` at any time.
 
 ```javascript
 log.addFilter(['data', 'debug'])
 ```
 
-This will enable messages for the `data` and `debug` channels.
+This will enable theh output of log messages for the `data` and `debug` channels.
 
 
 ### Contexts
 
-For true `observability`, it is recommended that you log full information regarding request state in anticipation of future monitoring needs.
+For true observability of your apps, it is recommended that you log full information regarding request state in anticipation of future monitoring needs.
 
-Additional context information can be supplied when calling a log channel method or the `emit` methods. The context is supplied as the second parameter.
+Additional context information can be supplied when logging via the second parameter.
 
 ```javascript
 log.info('Basic message', {
@@ -157,6 +158,8 @@ This per-API context is merged with the global logger context. When you create t
 ```javascript
 const log = new SenseLogs({params}, {
     //  Global context properties
+    weather: 'sunny',
+    temp: 99.9,
 })
 ```
 
@@ -191,17 +194,23 @@ Child instances can be created to any desired depth. i.e. a child can be created
 
 ### Dynamic Logging and Environment Variables
 
-SenseLogs filtering can be dynamically controlled by calling filter APIS or by setting environment varibles for Lambda functions.
+SenseLogs filtering can be dynamically controlled by calling addFilter/setFilter or by setting environment varibles for Lambda functions.
 
-You can modify the default filter, override filter and sampling filters.
+SenseDeep keeps three log filter sets:
 
-The APIs are:
+* The default filter
+* The override filter
+* The sample filter
+
+The default set defines the base set of log channels that are enabled for output. The override set is added to the default set for a limited time duration. The sample set is added to the default set for a percentage of log requests.
+
+The APIs to modifiy the filter sets are:
 
 * setFilter
 * setOverride
 * setSample
 
-The environment variables are:
+The environment variables to configure the filter sets are:
 
 * LOG_FILTER
 * LOG_OVERRIDE
@@ -209,14 +218,15 @@ The environment variables are:
 
 If you change these environment variables, the next time your Lambda functions is invoked, it will be loaded with the new environment variable values. In this manner, you can dynamically and immediately control your logging channels without modifying code or redeploying.
 
-The [SenseDeep serverless studio](https://www.sensedeep.com) provides a convenient interface to manage these filter settings and will update these environment variables on your Lambdas.
+The [SenseDeep serverless studio](https://www.sensedeep.com) manages these filter settings and will update these environment variables on your Lambdas.
+
 
 #### LOG_FILTER
 
 The LOG_FILTER is read by the SenseLogs constructor to invoke `setFilter` to define the default log filter. Set it to a comma separated list of log channels. For example:
 
 ```shell
-LOG_FILTER=fatal,error,info
+    LOG_FILTER=fatal,error,info
 ```
 
 #### LOG_OVERRIDE
@@ -224,7 +234,7 @@ LOG_FILTER=fatal,error,info
 The LOG_OVERRIDE is read by SenseLogs to invoke `setOverride` to define an override log filter that will apply for a limited duration of time. Set it to a comma separated list of log channels that is prefixed by an expiry time as a Unix epoch (seconds since Jan 1 1970). For example:
 
 ```shell
-LOG_OVERRIDE=1626409530045:data,trace
+    LOG_OVERRIDE=1626409530045:data,trace
 ```
 
 ### LOG_SAMPLE
@@ -232,10 +242,11 @@ LOG_OVERRIDE=1626409530045:data,trace
 The LOG_SAMPLE is used to invoke `setSample` to define an additional log filter that will apply for percentage of requests. Set it to a comma separated list of log channels that is prefixed by a percentage. For example:
 
 ```shell
-LOG_SAMPLE=1%:trace
+    LOG_SAMPLE=1%:trace
 ```
 
 This will cause 1% of log requests to the given log channels to be logged. This is useful to ensure you have a complete trace of some requests at all times without needing to redeploy or reconfigure.
+
 
 ### CloudWatch Metrics and EMF
 
@@ -344,6 +355,20 @@ SenseLogs creates some reserved properties on the log message context. These pro
 * @stack &mdash; Set to a captured stack backtrace.
 * @message &mdash; If a context.message is supplied in addition to the API message, the context message will be saved as `@message`.
 
+#### Channel Methods
+
+The standard channels and method signatures are:
+
+```typescript
+    data(message: string, context: {}): void;
+    debug(message: string, context: {}): void;
+    error(message: string, context: {}): void;
+    fatal(message: string, context: {}): void;
+    info(message: string, context: {}): void;
+    trace(message: string, context: {}): void;
+    warn(message: string, context: {}): void;
+    emit(channel: string, message: string, context: {}): void;
+```
 
 ### Methods
 
@@ -435,20 +460,6 @@ The sample filter will augment the filter and override filter for the given perc
 
 If the filter is null, this call will remove all samples.
 
-#### Level APIs
-
-The standard channels and method signatures are:
-
-```typescript
-    data(message: string, context: {}): void;
-    debug(message: string, context: {}): void;
-    error(message: string, context: {}): void;
-    fatal(message: string, context: {}): void;
-    info(message: string, context: {}): void;
-    trace(message: string, context: {}): void;
-    warn(message: string, context: {}): void;
-    emit(channel: string, message: string, context: {}): void;
-```
 
 ### References
 
