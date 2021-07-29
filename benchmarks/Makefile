@@ -1,7 +1,6 @@
 
 all: lines
-	node index.js senselogs
-	node index.js pino
+	node index.js senselogs pino
 
 lines:
 	echo SenseLogs ; cat node_modules/senselogs/dist/mjs/* | wc -l

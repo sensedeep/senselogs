@@ -37,7 +37,8 @@ function pinoNull() {
 function bench(lib, fn) {
     let start = new Date()
     fn()
-    console.log(`${lib} elapsed ${new Date() - start}\n`)
+    let elapsed = new Date() - start
+    console.log(`${lib} elapsed ${elapsed} ms, per ${elapsed / Iter * 1000} ms\n`)
 }
 
 function main() {
