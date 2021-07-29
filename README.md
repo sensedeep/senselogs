@@ -16,6 +16,7 @@ SenseLogs is designed to do this, simply and elegantly.
 ## SenseLogs Features
 
 * Extremely fast initialization time to shorten cold-starts.
+* Up to 7 times faster than the nearest competitor logger.
 * Clean, readable small code base (<500 lines).
 * Emits logs in JSON with rich context.
 * Dynamic log control to change log filters without redeploying.
@@ -82,6 +83,19 @@ log.trace('Database request', {request})
 
 log.emit('custom-channel', 'My custom channel')
 ```
+
+### Benchmarks
+
+Because SenseLogs was designed exclusively for serverless, it does not carry unnecesary enterprise logging burdens and is blazing fast for serverless logging tasks.
+
+Here are the results of benchmarks against the self-claimed fastest logger [Pino](https://github.com/pinojs/pino).
+
+
+| Logger | Time | Code Size |
+| -------- | :--: | ----------- |
+| SenseLogs | 477 ms | 478 lines (commented) |
+| Pino | 3,269 ms | 1281 lines (comments stripped) |
+
 
 ### Output Format
 
