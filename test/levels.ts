@@ -29,6 +29,14 @@ test('SetLevels', async() => {
     log.setLevels('custom')
     levels = log.getLevels()
     expect(levels).toMatchObject(['custom'])
+
+    log.addFilter('custom')
+    log.emit('custom', 'Hello World')
+    let result = log.flush()
+    expect(result.length).toBe(1)
+    expect(result[0]).toMatchObject({
+        'message': 'Hello World',
+    })
 })
 
 test('AddLevels duplicate', async() => {

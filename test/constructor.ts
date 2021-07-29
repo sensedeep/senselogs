@@ -57,7 +57,7 @@ test('Constructor: levels', async() => {
     })
     log.addFilter('custom')
 
-    log.custom('Custom message')
+    log.emit('custom', 'Custom message')
     let result: any = log.flush()[0]
     expect(result).toMatchObject({
         '@level': 'custom',
