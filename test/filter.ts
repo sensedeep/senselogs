@@ -5,7 +5,6 @@ import {SenseLogs, print, dump, delay} from './utils/init'
 
 // jest.setTimeout(7200 * 1000)
 
-const DefaultLevels = ['data', 'debug', 'error', 'fatal', 'info', 'trace', 'warn']
 const DefaultFilter = ['fatal', 'error', 'metrics', 'info', 'warn']
 
 test('SetFilter', async() => {

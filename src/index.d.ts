@@ -21,18 +21,15 @@ export default class SenseLogs {
     addContext(contexts: {} | {}[]): SenseLogs;
     addDestination(dest: Destination): SenseLogs;
     addFilter(filter?: string | string[]): SenseLogs;
-    addLevels(levels?: string | string[]): SenseLogs;
     child(context?: {}): SenseLogs;
     clearContext(): SenseLogs;
     flush(): {}[];
     getFilter(): string[];
-    getLevels(): string[];
     getSample(): {};
     getOverride(): {};
     metrics(namespace: string, values: {}, dimensions?: any[][]): void;
     setDestination(dest: Destination): SenseLogs;
     setFilter(filter?: string | string[]): SenseLogs;
-    setLevels(levels?: string | string[]): SenseLogs;
     setOverride(filter?: string | string[], expire?: Date): SenseLogs;
     setSample(filter?: string | string[], rate?: number): SenseLogs;
 

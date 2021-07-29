@@ -5,8 +5,6 @@ import {SenseLogs, print, dump, delay} from './utils/init'
 
 // jest.setTimeout(7200 * 1000)
 
-const DefaultLevels = ['data', 'debug', 'error', 'fatal', 'info', 'trace', 'warn']
-
 test('Redact basic', async() => {
     const log: any = new SenseLogs({
         destination: 'capture',
