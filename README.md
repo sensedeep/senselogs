@@ -9,7 +9,7 @@ SenseLogs is a simple, flexible, dynamic, blazing fast log library designed excl
 
 While there are many other good logging libraries that claim to be fast, they were not designed `for` serverless and so are bigger and slower than necessary.
 
-Furthermore, serverless apps have special requirments like minimizing cold-start time, dynamic log filtering control without redploying and being able to capture detailed context and request information without modifying your functions.
+Furthermore, serverless apps have special requirements like minimizing cold-start time, dynamic log filtering control without redeploying and being able to capture detailed context and request information without modifying your functions.
 
 SenseLogs is designed to do this, simply and elegantly.
 
@@ -86,7 +86,7 @@ log.emit('custom-channel', 'My custom channel')
 
 ### Benchmarks
 
-Because SenseLogs was designed exclusively for serverless, it does not carry unnecesary enterprise logging burdens and is blazing fast for serverless logging tasks.
+Because SenseLogs was designed exclusively for serverless, it does not carry unnecessary enterprise logging burdens and is blazing fast for serverless logging tasks.
 
 Here are the results of benchmarks against the self-claimed fastest logger [Pino](https://github.com/pinojs/pino).
 
@@ -208,7 +208,7 @@ Child instances can be created to any desired depth. i.e. a child can be created
 
 ### Dynamic Logging and Environment Variables
 
-SenseLogs filtering can be dynamically controlled by calling addFilter/setFilter or by setting environment varibles for Lambda functions.
+SenseLogs filtering can be dynamically controlled by calling addFilter/setFilter or by setting environment variables for Lambda functions.
 
 SenseDeep keeps three log filter sets:
 
