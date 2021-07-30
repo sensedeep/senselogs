@@ -77,7 +77,7 @@ This will emit
 
 SenseLogs organizes log messages via channels which are names given to classify log message types. You can then filter log messages by channel.
 
-SenseLogs provides standard channels like: debug, error, warn and info.
+SenseLogs provides standard channels like: debug, error, warn and info. For example:
 
 ```javascript
 log.error('Bad things happen sometimes')
@@ -91,6 +91,7 @@ You can extend upon this basic set of channels and use your own custom channels 
 
 ```javascript
 log.emit('custom-channel', 'My custom channel')
+log.emit('messaging-backend', 'Network error')
 ```
 
 ### Benchmarks
@@ -159,7 +160,7 @@ The default log filter will emit messages for the `fatal`, `error`, `metrics`, `
 log.addFilter(['data', 'debug'])
 ```
 
-This will enable theh output of log messages for the `data` and `debug` channels.
+This will enable the output of log messages for the `data` and `debug` channels.
 
 
 ### Contexts
@@ -240,7 +241,7 @@ The environment variables to configure the filter sets are:
 * LOG_OVERRIDE
 * LOG_SAMPLE
 
-If you change these environment variables, the next time your Lambda functions is invoked, it will be loaded with the new environment variable values. In this manner, you can dynamically and immediately control your logging channels without modifying code or redeploying.
+If you change these environment variables, the next time your Lambda function is invoked, it will be loaded with the new environment variable values. In this manner, you can dynamically and immediately control your logging channels without modifying code or redeploying.
 
 The [SenseDeep serverless studio](https://www.sensedeep.com) manages these filter settings and will update these environment variables on your Lambdas.
 
@@ -464,7 +465,6 @@ The values is an array of metric values to submit. Dimensions are the optional C
 Set the filter channels described by the given filter parameter. The current filter set specifies the channels that enabled to emit log data.
 
 The filter may be a comma separated string or an array of channels. If filter is null, this call will remove all filter channels. If filter is set to 'default', the filter channels will be restored to the default defined via the constructor.
-
 
 
 #### setOverride(filter: string | array, expire: number)
