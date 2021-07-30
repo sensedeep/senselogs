@@ -17,22 +17,27 @@ SenseLogs is designed to do this, simply and elegantly.
 
 * Extremely fast initialization time to shorten cold-starts.
 * Up to 7 times faster than the nearest competitor logger.
-* Clean, readable small code base (<500 lines).
-* Emits logs in JSON with rich context.
+* Flexible log channels and filters.
 * Dynamic log control to change log filters without redeploying.
 * Log sampling to emit increased logs for a percentage of requests.
-* Stack capture for uncaught exceptions.
-* Flexible log channels and filters.
-* Inheriting child log instances for per-module logging.
+* Emits logs in JSON with rich context.
 * For local debugging, emits in human readable formats.
+* Inheriting child log instances for per-module logging.
+* Stack capture for uncaught exceptions.
 * Easily emit CloudWatch custom metrics using EMF.
 * Integrates with SenseDeep developer studio.
 * No dependencies.
+* Clean, readable small code base (<500 lines).
 * Full TypeScript support.
+
 
 ## Quick Tour
 
-Import the SenseLogs library. If you are not using ES modules or TypeScript, use `require` to import the libraries.
+Install the library using npm or yarn.
+
+    npm i senselogs
+
+Import the SenseLogs library. If you are not using ES modules or TypeScript, use `require` to import the library.
 
 ```javascript
 import SenseLogs from 'senselogs'
@@ -41,7 +46,7 @@ import SenseLogs from 'senselogs'
 Create and configure a logger.
 
 ```javascript
-const log = new SenseLogs({name: 'MyApp'})
+const log = new SenseLogs()
 ```
 
 Then log with a message:
@@ -70,9 +75,9 @@ This will emit
 }
 ```
 
-SenseLogs organizes log messages via channels which are simple names given to classify log message types.
+SenseLogs organizes log messages via channels which are names given to classify log message types. You can then filter log messages by channel.
 
-SenseLogs provides methods for standard channels like: debug, error, warn and info. You can easily extend upon the basic set of channels with your own. For example:
+SenseLogs provides standard channels like: debug, error, warn and info.
 
 ```javascript
 log.error('Bad things happen sometimes')
@@ -80,7 +85,11 @@ log.error(new Error('Invalid request state'), {request})
 
 log.debug('The queue was empty')
 log.trace('Database request', {request})
+```
 
+You can extend upon this basic set of channels and use your own custom channels via the `emit` API. For example:
+
+```javascript
 log.emit('custom-channel', 'My custom channel')
 ```
 
@@ -90,6 +99,7 @@ Because SenseLogs was designed exclusively for serverless, it does not carry unn
 
 Here are the results of benchmarks against the self-claimed fastest logger [Pino](https://github.com/pinojs/pino).
 
+SenseLogs 6.5 times faster than the best alternative.
 
 | Logger | Time | Code Size |
 | -------- | :--: | ----------- |
@@ -99,7 +109,7 @@ Here are the results of benchmarks against the self-claimed fastest logger [Pino
 
 ### Output Format
 
-By default SenseLogs will emit log messages in JSON format to the console and using JSON format is highly recommended. However, you can also configure the logger to emit human readable output by setting the destination to 'console'
+By default SenseLogs will emit log messages in JSON format to the console. However, you can also configure the logger to emit human readable output by setting the destination to 'console'
 
 You should add rich context to your logging messages and use a log management solution like [SenseDeep](https://www.sensedeep.com) that is designed to handle JSON log messages with ease.
 
@@ -123,7 +133,7 @@ By default, SenseLogs messages do not include a timestamp because Lambda and oth
 
 ### Log Channels
 
-SenseDeep defines the following default log channels: `data`, `debug`, `error`, `fatal`, `info`, `metrics`, `trace` and `warn`. These have corresponding log methods of the same name.
+SenseLogs defines the following default log channels: `data`, `debug`, `error`, `fatal`, `info`, `metrics`, `trace` and `warn`. These have corresponding log methods of the same name.
 
 Log messages will be emitted when you call a log channel method AND that channel is enabled in the filter set. See filters below.
 
@@ -210,7 +220,7 @@ Child instances can be created to any desired depth. i.e. a child can be created
 
 SenseLogs filtering can be dynamically controlled by calling addFilter/setFilter or by setting environment variables for Lambda functions.
 
-SenseDeep keeps three log filter sets:
+SenseLogs keeps three log filter sets:
 
 * The default filter
 * The override filter
@@ -445,7 +455,7 @@ Convenience method that takes the channel as the first argument.
 
 Emit metrics in CloudWatch EMF format.
 
-The namespace is your unique custom namespace and usually consists of your name with service name. For example: 'SenseDeep/App'.
+The namespace is your unique custom namespace and usually consists of your name with service name. For example: 'MyCorp/App'.
 
 The values is an array of metric values to submit. Dimensions are the optional CloudWatch Metrics two-dimensional array of extra dimensions.
 
