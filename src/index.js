@@ -278,9 +278,10 @@ export default class SenseLogs {
             delete context.err
         }
         if (exception) {
-            context['@exception'] = JSON.parse(JSON.stringify(exception, Object.getOwnPropertyNames(exception)), null, 4)
+            //  Error objects are not enumerable by JSON. Convert here and convert stack backtraces to arrays for formatting.
+            let err = context['@exception'] = JSON.parse(JSON.stringify(exception, Object.getOwnPropertyNames(exception)), null, 4)
+            err.stack = err.stack.split('\n').slice(1).map(r => r.trim())
         }
-
         if (context.message) {
             context['@message'] = context.message
         }
