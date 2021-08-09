@@ -7,10 +7,11 @@ const DefaultFilter = ['fatal', 'error', 'metrics', 'info', 'warn']
 export default class SenseLogs {
     #defaultFilter
     #destinations
+    #flag
     #filter
+    #name
     #options
     #override
-    #name
     #redact
     #sample
     #timestamp
@@ -37,6 +38,16 @@ export default class SenseLogs {
             this.#sample = {}
             this.#destinations = []
 
+            if (options.flag) {
+                if (typeof options.flag == 'string') {
+                    this.#flag = {error: options.flag, fatal: options.flag}
+                } else {
+                    this.#flag = options.flag
+                }
+            } else {
+                this.#flag = {}
+            }
+
             let filter = options.filter || DefaultFilter
 
             /* istanbul ignore next */
@@ -57,17 +68,17 @@ export default class SenseLogs {
             this.#defaultFilter = Object.keys(this.#filter)
 
             if (options.destination == 'console') {
-                this.addDestination(new ConsoleDest())
+                this.addDestination(new ConsoleDest(options))
 
             } else if (options.destination == 'capture') {
-                this.addDestination(new CaptureDest())
+                this.addDestination(new CaptureDest(options))
 
             } else if (options.destination && typeof options.destination.write == 'function') {
                 this.addDestination(options.destination)
 
             } else {
                 //  Default to json
-                this.addDestination(new JsonDest())
+                this.addDestination(new JsonDest(options))
             }
             this.addUncaughtExceptions()
         }
@@ -83,7 +94,7 @@ export default class SenseLogs {
         }
         if (!Array.isArray(filter)) {
             if (filter == 'default') {
-                filter = this.#defaultFilter || DefaultFilter
+                filter = this.#top.#defaultFilter || DefaultFilter
             } else {
                 filter = filter.split(',').map(f => f.trim())
             }
@@ -105,23 +116,24 @@ export default class SenseLogs {
     }
 
     getFilter() {
-        return Object.keys(this.#filter)
+        return Object.keys(this.#top.#filter)
     }
 
     getOverride() {
-        return this.#override
+        return this.#top.#override
     }
 
     getSample() {
-        return this.#sample
+        return this.#top.#sample
     }
 
     /*
         Define a limited duration override filter. If filter is null, clear overrides.
     */
     setOverride(filter, expire) {
+        let top = this.#top
         if (!filter) {
-            this.#override = {}
+            top.#override = {}
             return this
         }
         if (!expire) {
@@ -132,7 +144,7 @@ export default class SenseLogs {
         }
         for (let chan of filter) {
             if (chan) {
-                this.#top.#override[chan] = expire
+                top.#override[chan] = expire
             }
         }
         return this
@@ -143,7 +155,7 @@ export default class SenseLogs {
     */
     setSample(filter, rate) {
         if (!filter) {
-            this.#sample = {}
+            this.#top.#sample = {}
             return this
         }
         if (rate == null) {
@@ -242,7 +254,9 @@ export default class SenseLogs {
     /*
         Process a log message and optionally emit
     */
-    process(chan, message, context) {
+    process(chan, message, context = {}) {
+        let top = this.#top
+        chan = context['@chan'] || chan
         if (!this.shouldLog(chan)) {
             return
         }
@@ -254,20 +268,6 @@ export default class SenseLogs {
         } else {
             context = Object.assign({}, context)
         }
-        context['@chan'] = chan
-        context['@module'] = context['@module'] || this.#top.#name
-
-        if (this.#timestamp) {
-            context.timestamp = new Date()
-        }
-        if (context['@stack'] === true) {
-            try {
-                context['@stack'] = (new Error('stack')).stack.split('\n')[3].trim().replace(/^.*webpack:\/|:[0-9]*\)$/g, '')
-            } catch (err) {}
-        }
-        if (context.message) {
-            context['@message'] = context.message
-        }
 
         if (message instanceof Error) {
             exception = message
@@ -276,21 +276,36 @@ export default class SenseLogs {
         } else if (context.err instanceof Error) {
             exception = context.err
             delete context.err
-
-        } else if (typeof message != 'string') {
-            message = JSON.stringify(message)
         }
         if (exception) {
-            context['@exception'] = exception
-            message = message || exception.message
+            context['@exception'] = JSON.parse(JSON.stringify(exception, Object.getOwnPropertyNames(exception)), null, 4)
         }
 
-        context.message = message
+        if (context.message) {
+            context['@message'] = context.message
+        }
+        context.message = (typeof message == 'string') ? message : JSON.stringify(message)
+
+        context['@chan'] = chan
+        context['@module'] = context['@module'] || top.#name
+        if (context['@stack'] === true) {
+            try {
+                context['@stack'] = (new Error('stack')).stack.split('\n')[3].trim().replace(/^.*webpack:\/|:[0-9]*\)$/g, '')
+            } catch (err) {}
+        }
+        if (this.#top.#timestamp) {
+            context.timestamp = new Date()
+        }
+
+        let flag = top.#flag
+        if (flag[chan]) {
+            context[flag[chan]] = true
+        }
 
         context = Object.assign({}, this.context, context)
 
-        if (this.#redact) {
-            context = this.#redact(context)
+        if (top.#redact) {
+            context = top.#redact(context)
             if (!context) return
         }
         this.write(context)
@@ -393,20 +408,6 @@ export default class SenseLogs {
 }
 
 /*
-    Log output in pure JSON
-*/
-class JsonDest {
-    write(log, context) {
-        let chan = context['@chan']
-        if (chan == 'metrics') {
-            process.stdout.write(context.message + '\n')
-        } else {
-            process.stdout.write(JSON.stringify(context) + '\n')
-        }
-    }
-}
-
-/*
     Capture Destination
 */
 class CaptureDest {
@@ -431,37 +432,59 @@ class CaptureDest {
     Simple destination to the console. Uses abbreviated time format.
 */
 class ConsoleDest {
+    constructor(options) {
+        this.options = options
+        this.stdout = process.stdout || {write: this.output}
+        this.stderr = process.stderr || {write: this.error}
+    }
+
     write(log, context) {
         let message = context.message
-        let module = context['@module']
         let time = this.getTime()
         let chan = context['@chan']
+
+        let prefix = this.options.prefix || ''
+        if (prefix) {
+            prefix = (context[prefix] || chan).toUpperCase()
+        } else {
+            prefix = chan.toUpperCase()
+        }
+
         let exception = context['@exception']
         if (exception) {
-            process.stderr.write(`${time}: ${module}: ${chan}: ${message}: ${exception.message}` + '\n')
-            process.stderr.write(exception.stack + '\n')
-            process.stderr.write(JSON.stringify(context, null, 4) + '\n')
+            this.stderr.write(`${time}: ${prefix}: ${message}` + '\n')
+            this.stderr.write(exception + '\n')
+            this.stderr.write(JSON.stringify(context, null, 4) + '\n')
 
         } else if (chan == 'error') {
-            process.stderr.write(`${time}: ${module}: ${chan}: ${message}` + '\n')
+            this.stderr.write(`${time}: ${prefix}: ${message}` + '\n')
             if (Object.keys(context).length > 3) {
-                process.stderr.write(JSON.stringify(context, null, 4) + '\n')
+                this.stderr.write(JSON.stringify(context, null, 4) + '\n')
             }
 
         } else if (chan == 'metrics') {
-            process.stdout.write(context.message + '\n')
+            this.stdout.write(context.message + '\n')
 
         } else if (chan == 'trace') {
-            process.stdout.write(`${time}: ${module}: ${chan}: ${message}` + '\n')
-            process.stdout.write(JSON.stringify(context, null, 4) + '\n')
+            this.stdout.write(`${time}: ${prefix}: ${message}` + '\n')
+            this.stdout.write(JSON.stringify(context, null, 4) + '\n')
 
         } else {
-            process.stdout.write(`${time}: ${module}: ${chan}: ${message}` + '\n')
+            this.stdout.write(`${time}: ${prefix}: ${message}` + '\n')
             if (Object.keys(context).length > 3) {
                 //  More than: message, @module and @chan
-                process.stdout.write(JSON.stringify(context, null, 4) + '\n')
+                this.stdout.write(JSON.stringify(context, null, 4) + '\n')
             }
         }
+    }
+
+    //  Fallback for browsers lacking process.stdout
+    output(msg) {
+        console.log(msg)
+    }
+
+    error(msg) {
+        console.error(msg)
     }
 
     //  Abbreviated timea for console destination
@@ -474,5 +497,29 @@ class ConsoleDest {
         let s = n + ''
         while (s.length < size) s = '0' + s
         return s
+    }
+}
+
+
+/*
+    Log output in JSON with optional channel prefix
+*/
+class JsonDest {
+    constructor(options) {
+        this.options = options
+        this.stdout = process.stdout || {write: this.output}
+    }
+
+    write(log, context) {
+        if (context['@chan'] == 'metrics') {
+            this.stdout.write(context.message + '\n')
+        } else {
+            this.stdout.write(JSON.stringify(context) + '\n')
+        }
+    }
+
+    //  Fallback for browsers lacking process.stdout
+    output(msg) {
+        console.log(msg)
     }
 }
