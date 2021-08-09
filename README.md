@@ -351,8 +351,10 @@ The `options` parameter is of type `object` with the following properties:
 | -------- | :--: | ----------- |
 | destination | `string\|function` | Set to `json`, `console` or an instance of an object with a `write` function to be invoked as write(logger, context). |
 | filter | `string\|array` | Set to a comma separated list or array of log channels that are enabled. |
+| flag | `string\|object` | Flag channel messages with a string for alert matching. If set to a string, error and fatal channel messages will get a property of that string name set to true. May be set to an object map of channel names and property values to set for those channel names. Default to null.|
 | name | `string` | Name for your app or service. The context.@module is set to this value by default. |
 | redact | `function` | Callback function invoked prior to passing the context data to the logger. Invoked as `callback(context)`|
+| prefix | `boolean` | Prefix output from the console destination with the value of a context property in uppercase. Useful to set prefix to '@chan' to prefix messages with the channel. e.g. INFO or ERROR. Helpful for alert detection. Defaults to the @chan value. See also the flag option. Default to null. |
 | timestamp | `boolean` | Set to true to add a context.timestamp to the log context message.|
 
 The `context` property is a map of context information that is included in all log messages.
@@ -419,7 +421,7 @@ The filter may be a comma separated string or an array of channels. Set `filter`
 
 #### child(context: {}): SenseLogs
 
-Create a child log instance derived from the parent log. The child context has its own context inherited from the parent log instance and it has its own set of log channels.
+Create a child log instance derived from the parent log. The child context has its own context inherited from the parent log instance.
 
 Children and parent instances share a single, common filter of enabled log channels.
 
