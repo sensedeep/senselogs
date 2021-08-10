@@ -291,7 +291,7 @@ export default class SenseLogs {
         context['@module'] = context['@module'] || top.#name
         if (context['@stack'] === true) {
             try {
-                context['@stack'] = (new Error('stack')).stack.split('\n')[3].trim().replace(/^.*webpack:\/|:[0-9]*\)$/g, '')
+                context['@stack'] = (new Error('stack')).stack.split('\n').slice(1).map(r => r.trim())
             } catch (err) {}
         }
         if (this.#top.#timestamp) {

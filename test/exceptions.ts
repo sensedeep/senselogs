@@ -50,6 +50,6 @@ test('Capture stack', async() => {
         'message': 'Hello World',
     })
     expect(result['@stack']).toBeDefined()
-    expect(result['@stack'].indexOf('at ')).toBe(0)
+    expect(result['@stack'].length > 0).toBe(true)
+    expect(result['@stack'][0].indexOf('at ')).toBe(0)
 })
-
