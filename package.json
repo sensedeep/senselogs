@@ -1,6 +1,6 @@
 {
     "name": "senselogs",
-    "version": "0.9.2",
+    "version": "0.9.3",
     "description": "Simple, dynamic, blazing fast serverless logging",
     "main": "dist/cjs/index.js",
     "module": "dist/mjs/index.js",
@@ -37,7 +37,7 @@
     "license": "MIT",
     "scripts": {
         "build": "rm -fr dist/* && tsc -p tsconfig.json && tsc -p tsconfig-cjs.json && ./fixup",
-        "_lint": "eslint .",
+        "_lint": "eslint src",
         "prepare": "npm run build",
         "_prepublishOnly": "npm test && npm run lint",
         "test": "jest",

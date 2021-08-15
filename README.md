@@ -316,11 +316,31 @@ You can request a stack backtrace be included in any log message by setting the 
 log.debug('Should never get here', {'@stack': true})
 ```
 
+### Flagging Errors
+
+If you are using an automated alerting platform like [SenseDeep](https://www.sensedeep.com/), it can be helpful to add a searchable property to logs messages emitted via the `error` or `fatal` channels. The flag option will nominate a property that will be created in your log messages.
+
+```javascript
+new SenseLogs({flag: 'RROR'})
+log.error('Boom')
+```
+
+This will emit:
+
+```json
+{
+    "message": "Boom",
+    "ERROR": true
+}
+```
+
+Your alerting platform can then easily trigger alerts for messages that include `ERROR`.
+
 ### Redacting Sensitive Information
 
 You can modify log data to remove sensitive information before it is emitted by supplying your own redact function to the SenseLogs constructor.
 
-```
+```javascript
 const log = new SenseLogs({redact: (context) => {
     if (context.password) {
         context.password = '[REDACTED]'
