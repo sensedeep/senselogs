@@ -4,14 +4,23 @@ import SenseLogs from '../../src/index'
 
 function nop() {}
 
-function output(stream, where?: Stream): any {
-    let prior = process.stdout.write
-    if (where) {
-        process[stream].write = where as any
+let stdout = process.stdout.write
+let stderr = process.stderr.write
+let consoleLog = console.log
+let consoleError = console.error
+
+function cap(disable = true): any {
+    if (disable) {
+        process.stdout.write = nop as any
+        process.stderr.write = nop as any
+        console.log = nop as any
+        console.error = nop as any
     } else {
-        process[stream].write = nop as any
+        process.stdout.write = stdout
+        process.stderr.write = stderr
+        console.log = consoleLog
+        console.error = consoleError
     }
-    return prior
 }
 
 const dump = (...args) => {
@@ -37,4 +46,4 @@ const delay = async (time) => {
     })
 }
 
-export {SenseLogs, delay, dump, output, print}
+export {SenseLogs, delay, dump, cap, print}

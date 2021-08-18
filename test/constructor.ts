@@ -49,6 +49,45 @@ test('Constructor: filter', async() => {
     expect(result.length).toBe(0)
 })
 
+test('Constructor json format', async() => {
+    const log = new SenseLogs({
+        destination: 'capture',
+        format: 'json',
+    })
+    log.error('Some error')
+    let result: any = log.flush()[0]
+    expect(result).toMatchObject({
+        '@chan': 'error',
+        'message': 'Some error'
+    })
+})
+
+test('Constructor tsv format', async() => {
+    const log = new SenseLogs({
+        destination: 'capture',
+        format: 'tsv',
+    })
+    log.error('Some error')
+    let result: any = log.flush()[0]
+    expect(result).toMatchObject({
+        '@chan': 'error',
+        'message': 'Some error'
+    })
+})
+
+test('Constructor human format', async() => {
+    const log = new SenseLogs({
+        destination: 'capture',
+        format: 'human',
+    })
+    log.error('Some error')
+    let result: any = log.flush()[0]
+    expect(result).toMatchObject({
+        '@chan': 'error',
+        'message': 'Some error'
+    })
+})
+
 test('Constructor: levels', async() => {
     //  TS
     const log: any = new SenseLogs({
@@ -84,7 +123,7 @@ test('Constructor: other destinations', async() => {
     let log: any = new SenseLogs({destination: 'console'})
     expect(log instanceof SenseLogs).toBe(true)
 
-    log = new SenseLogs({destination: 'json'})
+    log = new SenseLogs({destination: 'stdout'})
     expect(log instanceof SenseLogs).toBe(true)
 })
 

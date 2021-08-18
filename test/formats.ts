@@ -1,5 +1,5 @@
 /*
-    destinations.ts -
+    formats.ts -
  */
 import {SenseLogs, print, dump, delay, cap} from './utils/init'
 

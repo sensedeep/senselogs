@@ -5,6 +5,8 @@
 [![npm](https://img.shields.io/npm/l/senselogs.svg)](https://www.npmjs.com/package/senselogs)
 [![Coverage Status](https://coveralls.io/repos/github/sensedeep/senselogs/badge.svg?branch=main)](https://coveralls.io/github/sensedeep/senselogs?branch=main)
 
+**Extremely fast, dynamically controllable logging for serverless.**
+
 SenseLogs is a simple, flexible, dynamic, blazing fast log library designed exclusively for serverless apps using NodeJS.
 
 While there are many other good logging libraries that claim to be fast, they were not designed `for` serverless and so are bigger and slower than necessary.
@@ -75,7 +77,7 @@ This will emit
 }
 ```
 
-SenseLogs organizes log messages via channels which are names given to classify log message types. You can then filter log messages by channel.
+SenseLogs organizes and filters log messages via channels which are names given to classify log message types.
 
 SenseLogs provides standard channels like: debug, error, warn and info. For example:
 
@@ -94,6 +96,11 @@ log.emit('custom-channel', 'My custom channel')
 log.emit('messaging-backend', 'Network error')
 ```
 
+These channels are "zero-config" which means you do not need to pre-declare or define channels. Simply use them as you wish. Such custom channels are an ideal way to build "observability" into your app by defining latent logging commands that will only emit data when you enable those channels at runtime.
+
+SenseLogs integrates with the [SenseDeep](https://www.sensedeep.com) serverless developer studio which can manage custom channels to enable and disable output at runtime without redeploying your serverless apps.
+
+
 ### Benchmarks
 
 Because SenseLogs was designed exclusively for serverless, it does not carry unnecessary enterprise logging burdens and is blazing fast for serverless logging tasks.
@@ -110,27 +117,34 @@ SenseLogs 6.5 times faster than the best alternative.
 
 ### Output Format
 
-By default SenseLogs will emit log messages in JSON format to the console. However, you can also configure the logger to emit human readable output by setting the destination to 'console'
-
-You should add rich context to your logging messages and use a log management solution like [SenseDeep](https://www.sensedeep.com) that is designed to handle JSON log messages with ease.
-
+By default SenseLogs will emit log messages in JSON format. However, you can configure the logger to emit human readable output by setting the format to `human`. Tab-delimited format can be specified by setting the format to `tsv`.
 
 ```javascript
-const log = new SenseLogs({destination: 'console'})
+const log = new SenseLogs({format: 'tsv'})
 ```
+
+A custom formatting function can be specified via the `format` option which will be invoked and passed the combined log message context. The function should return the message to output without a trailing new line.
+
+```javascript
+format(context): string
+```
+
+By default, SenseLogs messages do not include a timestamp because Lambda and other services typically add their own timestamps. If you need a timestamp, set the `params.timestamp` to true in the SenseLogs constructor.
+
+
+### Custom Destinations
 
 You can supply additional destinations at any time via the `addDestination`. This is useful to ship your logs to other destinations or to transform and format the output as you please.
 
 ```javascript
-log.addDestination({write: (logger, context) =>
-    console.log(JSON.stringify(context))
-}})
+log.addDestination({
+    write: (logger, context, message) => message)
+}, 'human')
 ```
 
+The addDestination APi takes a format option as its 2nd parameter. This is set to 'json' by default, but you can set to `human` or `tsv`. A destination write function may choose to write the pre-formatted `message` argument or it can perform custom formatting and use the raw context to create its own message to write.
+
 Use the `setDestination` API to replace all destinations.
-
-By default, SenseLogs messages do not include a timestamp because Lambda and other services typically add their own timestamps. If you need a timestamp, set the `params.timestamp` to true in the SenseLogs constructor.
-
 
 ### Log Channels
 
@@ -199,6 +213,8 @@ log.clearContext()
 
 SenseLogs accumlates all the context information into a single context that is passed to the log destinations for writing.
 
+When coupled with custom channels, you can add detailed log messages to your serverless app that are ready to be enabled when you need them. Such latent log messages do not incurr any significant runtime CPU or I/O overhead.
+
 
 ### Child Instances
 
@@ -219,7 +235,7 @@ Child instances can be created to any desired depth. i.e. a child can be created
 
 ### Dynamic Logging and Environment Variables
 
-SenseLogs filtering can be dynamically controlled by calling addFilter/setFilter or by setting environment variables for Lambda functions.
+SenseLogs filtering can be dynamically controlled by calling `addFilter` or by setting environment variables for Lambda functions.
 
 SenseLogs keeps three log filter sets:
 
@@ -227,7 +243,7 @@ SenseLogs keeps three log filter sets:
 * The override filter
 * The sample filter
 
-The default set defines the base set of log channels that are enabled for output. The override set is added to the default set for a limited time duration. The sample set is added to the default set for a percentage of log requests.
+The default filter defines the base set of log channels that are enabled for output. The override set is added to the default set for a limited time duration. The sample set is added to the default set for a percentage of log requests.
 
 The APIs to modifiy the filter sets are:
 
@@ -241,7 +257,7 @@ The environment variables to configure the filter sets are:
 * LOG_OVERRIDE
 * LOG_SAMPLE
 
-If you change these environment variables, the next time your Lambda function is invoked, it will be loaded with the new environment variable values. In this manner, you can dynamically and immediately control your logging channels without modifying code or redeploying.
+If you change these environment variables, the next time your Lambda function is invoked, it will be automatically loaded by AWS with the new environment variable values. In this manner, you can dynamically and immediately control your logging channels without modifying code or redeploying.
 
 The [SenseDeep serverless studio](https://www.sensedeep.com) manages these filter settings and will update these environment variables on your Lambdas.
 
@@ -321,7 +337,7 @@ log.debug('Should never get here', {'@stack': true})
 If you are using an automated alerting platform like [SenseDeep](https://www.sensedeep.com/), it can be helpful to add a searchable property to logs messages emitted via the `error` or `fatal` channels. The flag option will nominate a property that will be created in your log messages.
 
 ```javascript
-new SenseLogs({flag: 'RROR'})
+new SenseLogs({flag: 'ERROR'})
 log.error('Boom')
 ```
 
@@ -335,6 +351,13 @@ This will emit:
 ```
 
 Your alerting platform can then easily trigger alerts for messages that include `ERROR`.
+
+If the flag option is set to a string, then the error and fatal channels will be flagged. The flag option may also be set to a map for other channels. For example:
+
+```javavscript
+new SenseLogs({flag: {warn: 'WARN', error: 'ERROR'})
+log.warn('Storm front coming')
+```
 
 ### Redacting Sensitive Information
 
@@ -369,12 +392,12 @@ The `options` parameter is of type `object` with the following properties:
 
 | Property | Type | Description |
 | -------- | :--: | ----------- |
-| destination | `string\|function` | Set to `json`, `console` or an instance of an object with a `write` function to be invoked as write(logger, context). |
+| destination | `string\|function` | Set to `json`, `console` or an instance of an object with a `write` function to be invoked as write(logger, context). Default to 'json'|
 | filter | `string\|array` | Set to a comma separated list or array of log channels that are enabled. |
+| format | `string\|function` | Set to `json`, `human`, `tsv` for JSON, human-readable or tab-delimited formats. Set to a function for custom formats. Default to 'json'. |
 | flag | `string\|object` | Flag channel messages with a string for alert matching. If set to a string, error and fatal channel messages will get a property of that string name set to true. May be set to an object map of channel names and property values to set for those channel names. Default to null.|
 | name | `string` | Name for your app or service. The context.@module is set to this value by default. |
 | redact | `function` | Callback function invoked prior to passing the context data to the logger. Invoked as `callback(context)`|
-| prefix | `boolean` | Prefix output from the console destination with the value of a context property in uppercase. Useful to set prefix to '@chan' to prefix messages with the channel. e.g. INFO or ERROR. Helpful for alert detection. Defaults to the @chan value. See also the flag option. Default to null. |
 | timestamp | `boolean` | Set to true to add a context.timestamp to the log context message.|
 
 The `context` property is a map of context information that is included in all log messages.
@@ -385,8 +408,12 @@ For example:
 const log = new SenseLogs({
     destination: 'console',
     filter: 'fatal, error',
+    format: 'json',
     name: 'MyApp',
-    redact: (context) => { console.log(JSON.stringify(context)) },
+    redact: (context) => {
+        context.password = null
+        return context
+    },
     timestamp: true,
 }, {context})
 ```
@@ -396,22 +423,24 @@ const log = new SenseLogs({
 
 SenseLogs creates some reserved properties on the log message context. These properties are prefixed with `@` to avoid clashing with your properties.
 
-* @exception &mdash; Set if an `Error` object is passed to SenseLogs.
-* @module &mdash; Set to the `name` given to the SenseLogs constructor or the `@module` context property on a child instance.
 * @chan &mdash; Set to the log channel for the current log message (info, error, ...).
-* @stack &mdash; Set to a captured stack backtrace.
+* @exception &mdash; Set if an `Error` object is passed to SenseLogs.
 * @message &mdash; If a context.message is supplied in addition to the API message, the context message will be saved as `@message`.
+* @module &mdash; Set to the `name` given to the SenseLogs constructor or the `@module` context property on a child instance.
+* @stack &mdash; Set to a captured stack backtrace.
 
 #### Channel Methods
 
 The standard channels and method signatures are:
 
 ```typescript
+    assert(message: string, context: {}): void;
     data(message: string, context: {}): void;
     debug(message: string, context: {}): void;
     error(message: string, context: {}): void;
     fatal(message: string, context: {}): void;
     info(message: string, context: {}): void;
+    silent(message: string, context: {}): void;
     trace(message: string, context: {}): void;
     warn(message: string, context: {}): void;
     emit(channel: string, message: string, context: {}): void;
@@ -423,13 +452,15 @@ The standard channels and method signatures are:
 
 Blend the given context properites or array of contexts into the log context.
 
-#### addDestination(dest)
+#### addDestination(dest, format: string)
 
 Add the given destination function to the set of destinations. The destination is an object with a write method that will be invoked as:
 
 ```javascript
-dest(logger: SenseLogs, context: object)
+dest(logger: SenseLogs, context: object, message: string)
 ```
+
+The format may be set to 'json', 'human' or 'tsv' for JSON, human-readable or tab delimited output formats. When the destination function is invoked, the `message` argument will be formatted according to the specified format. Alternatively, the destination may choose to create its own message from the raw context.
 
 
 #### addFilter(filter: string | array)
@@ -450,21 +481,21 @@ const child = log.child({brush: 'green'})
 child.emit('color', 'Favorite color')
 ```
 
-#### clearContext()
+#### clearContext(): void
 
 This will clear the context for the log instance.
 
 
-#### getFilter()
+#### getFilter(): []
 
 Return an array of the current filter channels.
 
 
-#### getOverride()
+#### getOverride(): {}
 
 Return a map containing the current override definition.
 
-#### getSample()
+#### getSample(): {}
 
 Return a map containing the current sample definition.
 

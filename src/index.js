@@ -17,15 +17,7 @@ export default class SenseLogs {
     #timestamp
     #top
 
-    /*
-        Options:
-            destination
-            filter
-            name
-            redact
-            timestamp
-    */
-    constructor(options = {destination: 'json'}, context = {}) {
+    constructor(options = {destination: 'stdout'}, context = {}) {
         if (!options.child) {
             this.#options = Object.assign({}, options)
             this.#name = options.name || 'app'
@@ -67,18 +59,19 @@ export default class SenseLogs {
             this.setFilter(filter)
             this.#defaultFilter = Object.keys(this.#filter)
 
+            let format = options.format || 'json'
+
             if (options.destination == 'console') {
-                this.addDestination(new ConsoleDest(options))
+                this.addDestination(new ConsoleDest(options), format)
 
             } else if (options.destination == 'capture') {
-                this.addDestination(new CaptureDest(options))
+                this.addDestination(new CaptureDest(options), format)
 
             } else if (options.destination && typeof options.destination.write == 'function') {
-                this.addDestination(options.destination)
+                this.addDestination(options.destination, format)
 
             } else {
-                //  Default to json
-                this.addDestination(new JsonDest(options))
+                this.addDestination(new StdoutDest(options), format)
             }
             this.addUncaughtExceptions()
         }
@@ -196,14 +189,14 @@ export default class SenseLogs {
     /*
         Add a new logger destination. Multiple destinations are supported.
     */
-    addDestination(dest) {
-        this.#top.#destinations.push(dest)
+    addDestination(dest, format = 'json') {
+        this.#top.#destinations.push({dest, format})
         return this
     }
 
-    setDestination(dest) {
+    setDestination(dest, format = 'json') {
         this.#top.#destinations = []
-        this.#top.#destinations.push(dest)
+        this.#top.#destinations.push({dest, format})
         return this
     }
 
@@ -251,10 +244,24 @@ export default class SenseLogs {
         return true
     }
 
+    process(chan, message, context = {}) {
+        let top = this.#top
+        context = this.prepare(chan, message, context)
+        if (top.#redact) {
+            context = top.#redact(context)
+        }
+        for (let {dest, format} of top.#destinations) {
+            if (context) {
+                let message = this.format(context, format)
+                dest.write(top, context, message)
+            }
+        }
+    }
+
     /*
         Process a log message and optionally emit
     */
-    process(chan, message, context = {}) {
+    prepare(chan, message, context = {}) {
         let top = this.#top
         chan = context['@chan'] || chan
         if (!this.shouldLog(chan)) {
@@ -262,13 +269,15 @@ export default class SenseLogs {
         }
         let exception
 
+        /*
+            Handle exceptions where context, message or context.err is an Error
+        */
         if (context instanceof Error) {
             exception = context
             context = {}
         } else {
             context = Object.assign({}, context)
         }
-
         if (message instanceof Error) {
             exception = message
             message = exception.message
@@ -282,6 +291,17 @@ export default class SenseLogs {
             let err = context['@exception'] = JSON.parse(JSON.stringify(exception, Object.getOwnPropertyNames(exception)), null, 4)
             err.stack = err.stack.split('\n').slice(1).map(r => r.trim())
         }
+        /*
+            Grap a stack snapshot if required
+        */
+        if (context['@stack'] === true) {
+            try {
+                context['@stack'] = (new Error('stack')).stack.split('\n').slice(1).map(r => r.trim())
+            } catch (err) {}
+        }
+        /*
+            Save a message already in the context
+        */
         if (context.message) {
             context['@message'] = context.message
         }
@@ -289,49 +309,87 @@ export default class SenseLogs {
 
         context['@chan'] = chan
         context['@module'] = context['@module'] || top.#name
-        if (context['@stack'] === true) {
-            try {
-                context['@stack'] = (new Error('stack')).stack.split('\n').slice(1).map(r => r.trim())
-            } catch (err) {}
-        }
+
         if (this.#top.#timestamp) {
             context.timestamp = new Date()
         }
-
+        /*
+            Flag the message if the flag property is present for this channel
+        */
         let flag = top.#flag
         if (flag[chan]) {
             context[flag[chan]] = true
         }
-
-        context = Object.assign({}, this.context, context)
-
-        if (top.#redact) {
-            context = top.#redact(context)
-            if (!context) return
-        }
-        this.write(context)
+        /*
+            Blend the log context with this calls context. This call takes precedence.
+        */
+        return Object.assign({}, this.context, context)
     }
 
-    data(message, context)  { this.process('data', message, context) }
-    debug(message, context) { this.process('debug', message, context) }
-    error(message, context) { this.process('error', message, context) }
-    fatal(message, context) { this.process('fatal', message, context) }
-    info(message, context)  { this.process('info', message, context) }
-    trace(message, context) { this.process('trace', message, context) }
-    warn(message, context)  { this.process('warn', message, context) }
+    format(context, format) {
+        let chan = context['@chan']
+        let message
+        if (format == 'json') {
+            message = this.jsonFormat(context)
 
-    /*
-        Write a log message to the configured destinations
-    */
-    write(context) {
-        for (let dest of this.#top.#destinations) {
-            dest.write(this.#top, context)
+        } else if (format == 'human') {
+            message = this.humanFormat(context)
+
+        } else if (format == 'tsv') {
+            message = this.tsvFormat(context)
+
+        } else if (typeof format == 'function') {
+            message = format(context)
         }
+        return message
     }
 
+    jsonFormat(context) {
+        return JSON.stringify(context)
+    }
+
+    tsvFormat(context) {
+        let message = [`"date"="new Date().toISOString()"`, `"message"="${context.message}"`]
+        for (let [key, value] of Object.entries(context)) {
+            message.push(`"${key}"="${value}"`)
+        }
+        message = message.join('\t')
+        return message
+    }
+
+    humanFormat(context) {
+        let time = this.getTime()
+        let exception = context['@exception']
+        let prefix = context['@chan'].toUpperCase()
+        let message
+
+        if (exception) {
+            message = `${time}: ${prefix}: ${context.message}` + '\n' + exception + '\n' + JSON.stringify(context, null, 4)
+
+        } else {
+            message = `${time}: ${prefix}: ${context.message}`
+            if (Object.keys(context).length > 3) {
+                //  More than: message, @module and @chan
+                message += ' ' + JSON.stringify(context, null, 4)
+            }
+        }
+        return message
+    }
+
+    assert(message, context) { this.process('assert', message, context) }
+    data(message, context)   { this.process('data', message, context) }
+    debug(message, context)  { this.process('debug', message, context) }
+    error(message, context)  { this.process('error', message, context) }
+    fatal(message, context)  { this.process('fatal', message, context) }
+    info(message, context)   { this.process('info', message, context) }
+    silent(message, context) { this.process('silent', message, context) }
+    trace(message, context)  { this.process('trace', message, context) }
+    warn(message, context)   { this.process('warn', message, context) }
+
+    //  Flush context and return (capture) the contexts
     flush(context) {
         let buffer
-        for (let dest of this.#top.#destinations) {
+        for (let {dest} of this.#top.#destinations) {
             buffer = dest.flush(this.#top, context)
         }
         return buffer
@@ -374,8 +432,10 @@ export default class SenseLogs {
                 },
             }, values))
         }
-        for (let dest of this.#top.#destinations) {
-            dest.write(this.#top, context)
+        //  Write directly bypassing process and format()
+
+        for (let {dest} of this.#top.#destinations) {
+            dest.write(this.#top, context, context.message)
         }
     }
 
@@ -384,7 +444,7 @@ export default class SenseLogs {
         if (typeof window != 'undefined') {
             /* istanbul ignore next */
             global.onerror = function(message, module, line, column, err) {
-                self.error(message, err)
+                self.error(message, {err})
             }
             /* istanbul ignore next */
             global.onunhandledrejection = (rejection) => {
@@ -402,93 +462,12 @@ export default class SenseLogs {
         /* istanbul ignore next */
         if (typeof process != 'undefined') {
             process.on("uncaughtException", function(err) {
-                self.error('Uncaught exception', err)
+                self.error('Uncaught exception', {err})
             })
         }
     }
-}
 
-/*
-    Capture Destination
-*/
-class CaptureDest {
-    buffer = []
-    flush() {
-        let buffer = this.buffer
-        this.buffer = []
-        return buffer
-    }
-
-    write(log, context) {
-        let chan = context['@chan']
-        if (chan == 'metrics') {
-            this.buffer.push(context.message)
-        } else {
-            this.buffer.push(context)
-        }
-    }
-}
-
-/*
-    Simple destination to the console. Uses abbreviated time format.
-*/
-class ConsoleDest {
-    constructor(options) {
-        this.options = options
-        this.stdout = process.stdout || {write: this.output}
-        this.stderr = process.stderr || {write: this.error}
-    }
-
-    write(log, context) {
-        let message = context.message
-        let time = this.getTime()
-        let chan = context['@chan']
-
-        let prefix = this.options.prefix || ''
-        if (prefix) {
-            prefix = (context[prefix] || chan).toUpperCase()
-        } else {
-            prefix = chan.toUpperCase()
-        }
-
-        let exception = context['@exception']
-        if (exception) {
-            this.stderr.write(`${time}: ${prefix}: ${message}` + '\n')
-            this.stderr.write(exception + '\n')
-            this.stderr.write(JSON.stringify(context, null, 4) + '\n')
-
-        } else if (chan == 'error') {
-            this.stderr.write(`${time}: ${prefix}: ${message}` + '\n')
-            if (Object.keys(context).length > 3) {
-                this.stderr.write(JSON.stringify(context, null, 4) + '\n')
-            }
-
-        } else if (chan == 'metrics') {
-            this.stdout.write(context.message + '\n')
-
-        } else if (chan == 'trace') {
-            this.stdout.write(`${time}: ${prefix}: ${message}` + '\n')
-            this.stdout.write(JSON.stringify(context, null, 4) + '\n')
-
-        } else {
-            this.stdout.write(`${time}: ${prefix}: ${message}` + '\n')
-            if (Object.keys(context).length > 3) {
-                //  More than: message, @module and @chan
-                this.stdout.write(JSON.stringify(context, null, 4) + '\n')
-            }
-        }
-    }
-
-    //  Fallback for browsers lacking process.stdout
-    output(msg) {
-        console.log(msg)
-    }
-
-    error(msg) {
-        console.error(msg)
-    }
-
-    //  Abbreviated timea for console destination
+    //  Abbreviated time for human format
     getTime() {
         let now = new Date()
         return `${this.zpad(now.getHours(), 2)}:${this.zpad(now.getMinutes(), 2)}:${this.zpad(now.getSeconds(), 2)}`
@@ -502,21 +481,44 @@ class ConsoleDest {
 }
 
 
-/*
-    Log output in JSON with optional channel prefix
-*/
-class JsonDest {
+//  Just for testing so we can capture the output
+class CaptureDest {
+    buffer = []
+    flush() {
+        let buffer = this.buffer
+        this.buffer = []
+        return buffer
+    }
+
+    write(log, context, message) {
+        let chan = context['@chan']
+        if (chan == 'metrics') {
+            this.buffer.push(context.message)
+        } else {
+            this.buffer.push(context)
+        }
+    }
+}
+
+//  AWS Lambda Node will prefix messages with an ISO timestamp and request ID (redundantly) 
+class ConsoleDest {
+    write(log, context, message) {
+        if (context['chan'] == 'error') {
+            console.error(message)
+        } else {
+            console.log(message)
+        }
+    }
+}
+
+
+class StdoutDest {
     constructor(options) {
-        this.options = options
         this.stdout = process.stdout || {write: this.output}
     }
 
-    write(log, context) {
-        if (context['@chan'] == 'metrics') {
-            this.stdout.write(context.message + '\n')
-        } else {
-            this.stdout.write(JSON.stringify(context) + '\n')
-        }
+    write(log, context, message) {
+        this.stdout.write(message + '\n')
     }
 
     //  Fallback for browsers lacking process.stdout
