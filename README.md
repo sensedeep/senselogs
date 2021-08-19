@@ -135,7 +135,7 @@ By default, SenseLogs messages do not include a timestamp because Lambda and oth
 
 ### Custom Destinations
 
-You can supply additional destinations at any time via the `addDestination`. This is useful to ship your logs to other destinations or to transform and format the output as you please.
+You can supply additional destinations at any time via the `addDestination`. This is useful to ship your logs to other destinations or to transform and format the output as you please. Each destination may configure a log output format to use for that destination.
 
 ```javascript
 log.addDestination({
@@ -145,7 +145,7 @@ log.addDestination({
 
 The addDestination APi takes a format option as its 2nd parameter. This is set to 'json' by default, but you can set to `human`, `tsv` or `keyvalue`. A destination write function may choose to write the pre-formatted `message` argument or it can perform custom formatting and use the raw context to create its own message to write.
 
-Use the `setDestination` API to replace all destinations.
+Use the `setDestination` API to replace all destinations with a new single destination.
 
 ### Log Channels
 
