@@ -149,7 +149,7 @@ Use the `setDestination` API to replace all destinations.
 
 ### Log Channels
 
-SenseLogs defines the following default log channels: `data`, `debug`, `error`, `fatal`, `info`, `metrics`, `trace` and `warn`. These have corresponding log methods of the same name.
+SenseLogs defines the following default log channels: `assert`, `data`, `debug`, `error`, `fatal`, `info`, `metrics`, `trace`, `warn` and `silent`. These have corresponding log methods of the same name.
 
 Log messages will be emitted when you call a log channel method AND that channel is enabled in the filter set. See filters below.
 
@@ -164,6 +164,19 @@ log.addFilter('auth')
 //  Use the 'auth' channel
 log.emit('auth', 'User Login', {user})
 ```
+
+Here are some tips about when to use various channels:
+
+* Assert - Code assertions via the `assert` method. This channel be enabled in dev builds.
+* Data - Request response data. This channel is not enabled by default.
+* Trace - Detailed information of a request or code module. This channel is not enabled by default. Consider using custom channels to better manage trace.
+* Debug - Logging only during debugging. This channel is not enabled by default.
+* Info - Generally useful information that will always be available in the logs.
+* Metrics - Used to emit EMF custom metrics. Enabled by default.
+* Warn - Conditions that may or may not qualify as errors and should be logged.
+* Error - Any error which prevents the operation completing. These errors typically require user intervention to be recoverable.
+* Fatal - Any critical error that cannot be recovered and requires immediate attention.
+* Silent - A placeholder channel that is never emitted.
 
 ### Filtering
 
@@ -498,6 +511,10 @@ child.emit('color', 'Favorite color')
 #### clearContext(): void
 
 This will clear the context for the log instance.
+
+#### enabled(chan: string): boolean
+
+Return true if the channel is enabled for output.
 
 
 #### getFilter(): []

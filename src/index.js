@@ -224,7 +224,7 @@ export default class SenseLogs {
     /*
         Determine if a channel should emit a log message
     */
-    shouldLog(chan) {
+    enabled(chan, inc = 0) {
         let top = this.#top
         if (top.#filter[chan] == null) {
             if (top.#override[chan] && top.#override[chan] < Date.now()) {
@@ -235,7 +235,8 @@ export default class SenseLogs {
                 if (sample == null) {
                     return false
                 }
-                if (++sample.count < sample.total) {
+                sample.count += inc
+                if (sample.count < sample.total) {
                     return false
                 }
                 sample.count = 0
@@ -247,6 +248,9 @@ export default class SenseLogs {
     process(chan, message, context = {}) {
         let top = this.#top
         context = this.prepare(chan, message, context)
+        if (context == null) {
+            return
+        }
         if (top.#redact) {
             context = top.#redact(context)
         }
@@ -264,8 +268,8 @@ export default class SenseLogs {
     prepare(chan, message, context = {}) {
         let top = this.#top
         chan = context['@chan'] || chan
-        if (!this.shouldLog(chan)) {
-            return
+        if (!this.enabled(chan, 1)) {
+            return null
         }
         let exception
 
