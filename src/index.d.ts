@@ -13,11 +13,11 @@ type Format = string | ((context: {}) => void);
 type ConstructorOptions = {
     destination?: string | Destination
     filter?: string | string[]
+    flag?: string | {}
     format?: Format
-    levels?: string | string[]
     name?: string
     redact?: (context: {}) => void
-    timestamp?
+    timestamp?: boolean
 };
 
 export default class SenseLogs {
@@ -28,18 +28,16 @@ export default class SenseLogs {
     addFilter(filter?: string | string[]): SenseLogs;
     child(context?: {}): SenseLogs;
     clearContext(): SenseLogs;
-    flush(): {}[];
+    flush(what?: string): {}[];
     getFilter(): string[];
     getSample(): {};
     getOverride(): {};
-    metrics(namespace: string, values: {}, dimensions?: any[][]): void;
     setDestination(dest: Destination, format?: Format): SenseLogs;
     setFilter(filter?: string | string[]): SenseLogs;
     setOverride(filter?: string | string[], expire?: Date): SenseLogs;
     setSample(filter?: string | string[], rate?: number): SenseLogs;
 
-    //  Default levels
-    assert(message: string | Error, context?: {}): void;
+    //  Default channels
     data(message: string | Error, context?: {}): void;
     debug(message: string | Error, context?: {}): void;
     error(message: string | Error, context?: {}): void;
@@ -49,6 +47,9 @@ export default class SenseLogs {
     trace(message: string | Error, context?: {}): void;
     warn(message: string | Error, context?: {}): void;
 
-    //  Custom levels
-    emit(level: string, message: string, context?: {}): void;
+    //  Custom channels
+    emit(chan: string, message: string, context?: {}): void;
+
+    assert(truthy: any, message?: string | Error, context?: {}): void;
+    metrics(chan: string, namespace: string, values: {}, dimensions?: any[][]): void;
 }

@@ -87,7 +87,7 @@ export default class SenseLogs {
         }
         if (!Array.isArray(filter)) {
             if (filter == 'default') {
-                filter = this.#top.#defaultFilter || DefaultFilter
+                filter = DefaultFilter
             } else {
                 filter = filter.split(',').map(f => f.trim())
             }
@@ -338,8 +338,14 @@ export default class SenseLogs {
         } else if (format == 'tsv') {
             message = this.tsvFormat(context)
 
+        } else if (format == 'keyvalue') {
+            message = this.keyValueFormat(context)
+
         } else if (typeof format == 'function') {
             message = format(context)
+
+        } else {
+            message = this.jsonFormat(context)
         }
         return message
     }
@@ -349,11 +355,20 @@ export default class SenseLogs {
     }
 
     tsvFormat(context) {
-        let message = [`"date"="new Date().toISOString()"`, `"message"="${context.message}"`]
+        let message = [new Date().toISOString()]
+        for (let value of Object.values(context)) {
+            message.push(value)
+        }
+        message = message.join('\t')
+        return message
+    }
+
+    keyValueFormat(context) {
+        let message = [`"date"="${new Date().toISOString()}"`]
         for (let [key, value] of Object.entries(context)) {
             message.push(`"${key}"="${value}"`)
         }
-        message = message.join('\t')
+        message = message.join(',')
         return message
     }
 
@@ -376,7 +391,13 @@ export default class SenseLogs {
         return message
     }
 
-    assert(message, context) { this.process('assert', message, context) }
+    assert(truthy, message = '', context = {}) {
+        if (! (Boolean(truthy) && truthy != 'false')) {
+            message = 'Assert failed' + (message ? `: ${message}` : '')
+            this.process('assert', message, context)
+        }
+    }
+
     data(message, context)   { this.process('data', message, context) }
     debug(message, context)  { this.process('debug', message, context) }
     error(message, context)  { this.process('error', message, context) }
@@ -387,10 +408,10 @@ export default class SenseLogs {
     warn(message, context)   { this.process('warn', message, context) }
 
     //  Flush context and return (capture) the contexts
-    flush(context) {
+    flush(what) {
         let buffer
         for (let {dest} of this.#top.#destinations) {
-            buffer = dest.flush(this.#top, context)
+            buffer = dest.flush(this.#top, what)
         }
         return buffer
     }
@@ -405,9 +426,9 @@ export default class SenseLogs {
     /*
         Emit a CloudWatch metic using the CloudWatch EMF format.
 
-        metrics('MyCompany/MyApp', {UserSessions: 1}, dimensions)
+        metrics('metrics', 'MyCompany/MyApp', {UserSessions: 1}, dimensions)
     */
-    metrics(namespace, values, dimensions = [[]]) {
+    metrics(chan, namespace, values, dimensions = [[]]) {
         if (!this.#top.#filter.metrics) {
             return
         }
@@ -418,7 +439,7 @@ export default class SenseLogs {
         let keys = Object.keys(values).filter(v => dimensions[0].indexOf(v) < 0)
         let metrics = keys.map(v => {return {Name: v}})
         let context = {
-            '@chan': 'metrics',
+            '@chan': chan,
             '@namespace': namespace,
             '@metrics': keys,
             message: `Metrics for ${namespace} ` + JSON.stringify(Object.assign({
@@ -433,7 +454,6 @@ export default class SenseLogs {
             }, values))
         }
         //  Write directly bypassing process and format()
-
         for (let {dest} of this.#top.#destinations) {
             dest.write(this.#top, context, context.message)
         }
@@ -483,27 +503,25 @@ export default class SenseLogs {
 
 //  Just for testing so we can capture the output
 class CaptureDest {
-    buffer = []
-    flush() {
-        let buffer = this.buffer
-        this.buffer = []
-        return buffer
+    messages = []
+    contexts = []
+    flush(log, what = 'context') {
+        let result = what == 'message' ? this.messages : this.contexts
+        this.messages = []
+        this.contexts = []
+        return result
     }
 
     write(log, context, message) {
-        let chan = context['@chan']
-        if (chan == 'metrics') {
-            this.buffer.push(context.message)
-        } else {
-            this.buffer.push(context)
-        }
+        this.messages.push(message)
+        this.contexts.push(context)
     }
 }
 
-//  AWS Lambda Node will prefix messages with an ISO timestamp and request ID (redundantly) 
+//  AWS Lambda Node will prefix messages with an ISO timestamp and request ID (redundantly)
 class ConsoleDest {
     write(log, context, message) {
-        if (context['chan'] == 'error') {
+        if (context['@chan'] == 'error') {
             console.error(message)
         } else {
             console.log(message)
@@ -514,6 +532,7 @@ class ConsoleDest {
 
 class StdoutDest {
     constructor(options) {
+        /* istanbul ignore next */
         this.stdout = process.stdout || {write: this.output}
     }
 
@@ -522,6 +541,7 @@ class StdoutDest {
     }
 
     //  Fallback for browsers lacking process.stdout
+    /* istanbul ignore next */
     output(msg) {
         console.log(msg)
     }

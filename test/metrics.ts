@@ -8,28 +8,29 @@ import {SenseLogs, print, dump, delay, cap} from './utils/init'
 test('metrics', async() => {
     const log = new SenseLogs({name: 'test', destination: 'capture'})
 
-    log.metrics('Acme/Rockets', {sessions: 1})
+    log.metrics('metrics', 'Acme/Rockets', {sessions: 1})
     let result: any = log.flush()[0]
-    expect(result.indexOf('{"_aws":') >= 0).toBe(true)
-    expect(result.indexOf('"Namespace":"Acme/Rockets"') > 0).toBe(true)
-    expect(result.indexOf('"Name":"sessions"') > 0).toBe(true)
+    let message = result.message
+    expect(message.indexOf('{"_aws":') >= 0).toBe(true)
+    expect(message.indexOf('"Namespace":"Acme/Rockets"') > 0).toBe(true)
+    expect(message.indexOf('"Name":"sessions"') > 0).toBe(true)
 })
 
 test('metrics via JSON', async() => {
     const log = new SenseLogs()
 
     cap()
-    log.metrics('Acme/Rockets', {sessions: 1})
+    log.metrics('metrics', 'Acme/Rockets', {sessions: 1})
     cap(false)
 })
 
 test('metrics when disabled', async() => {
     const log = new SenseLogs()
     log.setFilter()
-    log.metrics('Acme/Rockets', {sessions: 1})
+    log.metrics('metrics', 'Acme/Rockets', {sessions: 1})
 })
 
 test('metrics scenarios', async() => {
     const log = new SenseLogs()
-    // log.metrics('Acme/Rockets', {sessions: 1})
+    // log.metrics('metrics', 'Acme/Rockets', {sessions: 1})
 })

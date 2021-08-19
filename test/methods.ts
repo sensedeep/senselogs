@@ -1,5 +1,5 @@
 /*
-    methods.ts - 
+    methods.ts -
  */
 import {SenseLogs, print, dump, delay} from './utils/init'
 
@@ -36,7 +36,53 @@ test('Test methods with context', async() => {
     log.info('Hello Info', {context})
     log.warn('Hello Warn', {context})
     log.trace('Hello Trace', {context})
+    log.silent('Hello Trace', {context})
 
     let result = log.flush()
     expect(result.length).toBe(7)
+})
+
+test('Test assert ', async() => {
+    const log = new SenseLogs({destination: 'capture'})
+
+    log.addFilter(['assert'])
+
+    log.assert(true)
+    expect(log.flush().length).toBe(0)
+
+    log.assert(1)
+    expect(log.flush().length).toBe(0)
+
+    log.assert(2 == (1+1))
+    expect(log.flush().length).toBe(0)
+
+    log.assert(false)
+    let result: any = log.flush()
+    expect(result.length).toBe(1)
+    expect(result[0].message).toBe('Assert failed')
+    expect(result[0]['@chan']).toBe('assert')
+
+    log.assert(1 == (1 + 1))
+    expect(log.flush().length).toBe(1)
+
+    log.assert(null)
+    expect(log.flush().length).toBe(1)
+
+    log.assert(0/0)
+    expect(log.flush().length).toBe(1)
+
+    log.assert('false')
+    expect(log.flush().length).toBe(1)
+
+    log.assert(false, 'Custom Message')
+    result = log.flush()
+    expect(result.length).toBe(1)
+    expect(result[0].message).toBe('Assert failed: Custom Message')
+
+    log.assert(false, 'Custom Message', {weather: 'sunny'})
+    result = log.flush()
+    expect(result.length).toBe(1)
+    expect(result[0].message).toBe('Assert failed: Custom Message')
+    expect(result[0].weather).toBe('sunny')
+    expect(result[0]['@chan']).toBe('assert')
 })

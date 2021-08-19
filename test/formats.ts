@@ -3,81 +3,72 @@
  */
 import {SenseLogs, print, dump, delay, cap} from './utils/init'
 
-// jest.setTimeout(7200 * 1000)
+jest.setTimeout(7200 * 1000)
 
-test('JSON', async() => {
-    const log = new SenseLogs({destination: 'json'})
+test('JSON format', async() => {
+    const log = new SenseLogs({destination: 'capture', format: 'json'})
 
-    cap()
     log.info('Hello World')
-    expect(true).toBe(true)
-    cap(false)
+    let message: any = log.flush('message')[0]
+    expect(typeof message).toBe('string')
+    expect(message[0]).toBe('{')
+    expect(JSON.parse(message)).toMatchObject({
+        message: 'Hello World',
+        '@chan': 'info',
+    })
 })
 
-test('Console', async() => {
-    const log = new SenseLogs({destination: 'console'})
-
-    cap()
+test('human readable format', async() => {
+    const log = new SenseLogs({destination: 'capture', format: 'human'})
 
     log.info('Hello World')
-    expect(true).toBe(true)
+    let message: any = log.flush('message')[0]
+    expect(message.match(/\d\d:\d\d:\d\d: INFO: Hello World/) != null).toBe(true)
 
-    log.error(new Error('boom'))
-    expect(true).toBe(true)
-
-    log.error('', new Error('boom'))
-    expect(true).toBe(true)
-
+    //  Coverage
+    log.info('Boom', {weather: 'sunny'})
     log.error('Boom')
-    expect(true).toBe(true)
-
-    log.addFilter('trace')
-    log.trace('Trace message')
-    expect(true).toBe(true)
-
-    log.metrics('Acme/Rockets', {sessions: 1})
-    expect(true).toBe(true)
-
-    log.addContext({one: 1, two: 2})
-    log.info('Hello World')
-    expect(true).toBe(true)
-
-    log.error('Hello World')
-    expect(true).toBe(true)
-
-    cap(false)
+    log.error(new Error('Boom'), {weather: 'sunny'})
 })
 
-test('Destination in Constructor', async() => {
-    let result = []
-    const log = new SenseLogs({
-        destination: {
-            write: (log, context) => {
-                result.push(context)
-            }
-        }
-    })
+test('tsv format', async() => {
+    const log = new SenseLogs({destination: 'capture', format: 'tsv'})
+
     log.info('Hello World')
-    expect(result.length).toBe(1)
-    expect(result[0]).toMatchObject({
-        'message': 'Hello World',
-    })
+    let data: any = log.flush('message')[0]
+    let items = data.split('\t')
+    expect(items.length > 0).toBe(true)
 })
 
-test('Set Destination', async() => {
-    let result = [], buf = []
+test('keyvalue format', async() => {
+    const log = new SenseLogs({destination: 'capture', format: 'keyvalue'})
 
-    const log = new SenseLogs({destination: 'capture'})
-
-    log.setDestination({
-        write: (log, context) => {
-            buf.push(context)
-        }
-    })
     log.info('Hello World')
-    expect(result.length).toBe(0)
-    expect(buf.length).toBe(1)
-    expect(buf[0]).toMatchObject({
-        'message': 'Hello World',
+    let data: any = log.flush('message')[0]
+    let items = data.split(',')
+    expect(items.filter(i => i.split('=')).length).toBe(items.length)
+})
+
+test('custom format', async() => {
+    const log = new SenseLogs({destination: 'capture', format: (context) => {
+        return 'CUSTOM'
+    }})
+    log.info('Hello World')
+    let message: any = log.flush('message')[0]
+    expect(message).toBe('CUSTOM')
+})
+
+test('unknown format', async() => {
+    const log = new SenseLogs({destination: 'capture', format: 'unknown'})
+
+    //  Defaults to json output
+    log.info('Hello World')
+
+    let message: any = log.flush('message')[0]
+    expect(typeof message).toBe('string')
+    expect(message[0]).toBe('{')
+    expect(JSON.parse(message)).toMatchObject({
+        message: 'Hello World',
+        '@chan': 'info',
     })
 })

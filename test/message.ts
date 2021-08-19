@@ -1,5 +1,5 @@
 /*
-    message.ts
+    message.ts - test embedded messages
  */
 import {SenseLogs, print, dump, delay} from './utils/init'
 

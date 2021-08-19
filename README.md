@@ -78,6 +78,7 @@ This will emit
 ```
 
 SenseLogs organizes and filters log messages via channels which are names given to classify log message types.
+Unlike other logging products, channels are not ordered like log levels. You can enable or disable any level at any time.
 
 SenseLogs provides standard channels like: debug, error, warn and info. For example:
 
@@ -111,13 +112,13 @@ SenseLogs 6.5 times faster than the best alternative.
 
 | Logger | Time | Code Size |
 | -------- | :--: | ----------- |
-| SenseLogs | 477 ms | 478 lines (commented) |
-| Pino | 3,269 ms | 1281 lines (comments stripped) |
+| SenseLogs | 477 ms | 450 lines |
+| Pino | 3,269 ms | 1281 lines |
 
 
 ### Output Format
 
-By default SenseLogs will emit log messages in JSON format. However, you can configure the logger to emit human readable output by setting the format to `human`. Tab-delimited format can be specified by setting the format to `tsv`.
+By default SenseLogs will emit log messages in JSON format. However, you can configure the logger to emit human readable output by setting the format to `human`. Tab-delimited format can be specified by setting the format to `tsv`. Key/Value format is specified via `keyvalue`
 
 ```javascript
 const log = new SenseLogs({format: 'tsv'})
@@ -142,7 +143,7 @@ log.addDestination({
 }, 'human')
 ```
 
-The addDestination APi takes a format option as its 2nd parameter. This is set to 'json' by default, but you can set to `human` or `tsv`. A destination write function may choose to write the pre-formatted `message` argument or it can perform custom formatting and use the raw context to create its own message to write.
+The addDestination APi takes a format option as its 2nd parameter. This is set to 'json' by default, but you can set to `human`, `tsv` or `keyvalue`. A destination write function may choose to write the pre-formatted `message` argument or it can perform custom formatting and use the raw context to create its own message to write.
 
 Use the `setDestination` API to replace all destinations.
 
@@ -233,7 +234,7 @@ This will log the given message with the child context and the context of all it
 Child instances can be created to any desired depth. i.e. a child can be created from a child instance.
 
 
-### Dynamic Logging and Environment Variables
+### Dynamic Logging
 
 SenseLogs filtering can be dynamically controlled by calling `addFilter` or by setting environment variables for Lambda functions.
 
@@ -293,17 +294,18 @@ This will cause 1% of log requests to the given log channels to be logged. This 
 
 SenseLogs has integrated support to emit custom metrics to CloudWatch.
 
-AWS CloudWatch understands the Embedded Metric Format (EMF) where you can easily emit metrics to CloudWatch.
+AWS CloudWatch understands the [Embedded Metric Format](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch_Embedded_Metric_Format_Specification.html) (EMF) where you can easily emit custom metrics to CloudWatch.
 
 CloudWatch receives EMF metrics and dynamically creates and tracks metrics without prior configuration.
 
 EMF is one of the hidden gems in CloudWatch.
 
 ```javascript
-log.metrics('Acme/Rockets', {Launches: 1})
+log.metrics('metrics', 'Acme/Rockets', {Launches: 1})
 ```
 
-The metrics API take a custom CloudWatch metrics namespace as the first parameter. The second parameter contains the values. The optional third contains additional dimensions.
+The metrics API take the log channel as the first parameter. This is typically set to `metrics` but can be any channel.
+A custom CloudWatch metrics namespace as the next parameter and after that, the metric values and optionally metric dimensions.
 
 
 ### Exceptions and Error Handling
@@ -394,8 +396,8 @@ The `options` parameter is of type `object` with the following properties:
 | -------- | :--: | ----------- |
 | destination | `string\|function` | Set to `json`, `console` or an instance of an object with a `write` function to be invoked as write(logger, context). Default to 'json'|
 | filter | `string\|array` | Set to a comma separated list or array of log channels that are enabled. |
-| format | `string\|function` | Set to `json`, `human`, `tsv` for JSON, human-readable or tab-delimited formats. Set to a function for custom formats. Default to 'json'. |
 | flag | `string\|object` | Flag channel messages with a string for alert matching. If set to a string, error and fatal channel messages will get a property of that string name set to true. May be set to an object map of channel names and property values to set for those channel names. Default to null.|
+| format | `string\|function` | Set to `json`, `human`, `tsv` or `keyvalue` for JSON, human-readable, tab-delimited or key-value formats. Set to a function for custom formats. Default to 'json'. |
 | name | `string` | Name for your app or service. The context.@module is set to this value by default. |
 | redact | `function` | Callback function invoked prior to passing the context data to the logger. Invoked as `callback(context)`|
 | timestamp | `boolean` | Set to true to add a context.timestamp to the log context message.|
@@ -434,7 +436,6 @@ SenseLogs creates some reserved properties on the log message context. These pro
 The standard channels and method signatures are:
 
 ```typescript
-    assert(message: string, context: {}): void;
     data(message: string, context: {}): void;
     debug(message: string, context: {}): void;
     error(message: string, context: {}): void;
@@ -444,6 +445,19 @@ The standard channels and method signatures are:
     trace(message: string, context: {}): void;
     warn(message: string, context: {}): void;
     emit(channel: string, message: string, context: {}): void;
+```
+
+There is also an `assert` channel
+
+```typescript
+log.assert(truthy: boolean, message: string, context: {}): void;
+```
+
+You can use this as:
+
+```javascript
+log.assert(someValue == 'good value')
+log.assert(someValue == 'good value', 'Should never get here', {request})
 ```
 
 ### Methods
@@ -505,9 +519,15 @@ Return a map containing the current sample definition.
 Convenience method that takes the channel as the first argument.
 
 
-#### metrics(namespace: string, values: [], dimensions = [[]])
+#### metrics(channel: string, namespace: string, values: [], dimensions = [[]])
 
-Emit metrics in CloudWatch EMF format.
+Emit metrics in [CloudWatch EMF](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch_Embedded_Metric_Format_Specification.html) format.
+
+This is an easy way to define custom CloudWatch metrics from your log data.
+
+You can use any channel to emit metrics and the `metrics` channel is an ideal choice. By using channel filters, you can dynamically control which metrics are emitted (See [Dynamic Logging](#dynamic-logging).
+
+The log format for metric messages will always be unformatted which is required by the EMF specification.
 
 The namespace is your unique custom namespace and usually consists of your name with service name. For example: 'MyCorp/App'.
 

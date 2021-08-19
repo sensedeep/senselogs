@@ -5,8 +5,8 @@ import {SenseLogs, print, dump, delay, cap} from './utils/init'
 
 // jest.setTimeout(7200 * 1000)
 
-test('JSON', async() => {
-    const log = new SenseLogs({destination: 'json'})
+test('Stdout', async() => {
+    const log = new SenseLogs({destination: 'stdout'})
 
     cap()
     log.info('Hello World')
@@ -35,7 +35,7 @@ test('Console', async() => {
     log.trace('Trace message')
     expect(true).toBe(true)
 
-    log.metrics('Acme/Rockets', {sessions: 1})
+    log.metrics('metrics', 'Acme/Rockets', {sessions: 1})
     expect(true).toBe(true)
 
     log.addContext({one: 1, two: 2})

@@ -12,6 +12,7 @@
         "noFallthroughCasesInSwitch": true,
         "noImplicitAny": false,
         "pretty": true,
+        "removeComments": true,
         "resolveJsonModule": true,
         "rootDir": "src",
         "skipLibCheck": true,

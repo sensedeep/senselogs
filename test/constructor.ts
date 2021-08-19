@@ -1,7 +1,7 @@
 /*
     constructor.ts - Constructor test
  */
-import {SenseLogs, print, dump, delay} from './utils/init'
+import {SenseLogs, print, dump, delay, cap} from './utils/init'
 
 // jest.setTimeout(7200 * 1000)
 
@@ -88,11 +88,9 @@ test('Constructor human format', async() => {
     })
 })
 
-test('Constructor: levels', async() => {
-    //  TS
+test('Constructor: channels', async() => {
     const log: any = new SenseLogs({
         destination: 'capture',
-        levels: 'custom',
     })
     log.addFilter('custom')
 
@@ -117,11 +115,15 @@ test('Constructor: redact', async() => {
     expect(result.message).toBe('[REDACTED]')
 })
 
-
 test('Constructor: other destinations', async() => {
 
     let log: any = new SenseLogs({destination: 'console'})
     expect(log instanceof SenseLogs).toBe(true)
+
+    cap()
+    log.info('For coverage')
+    log.error('For coverage')
+    cap(false)
 
     log = new SenseLogs({destination: 'stdout'})
     expect(log instanceof SenseLogs).toBe(true)
@@ -147,6 +149,34 @@ test('Constructor: env vars', async() => {
     process.env.LOG_FILTER="default"
     log = new SenseLogs({destination: 'capture'})
     expect(log instanceof SenseLogs).toBe(true)
+})
+
+test('Flag string', async() => {
+    let log: any = new SenseLogs({destination: 'capture', flag: 'ERROR'})
+
+    //  Should get ERROR property
+    log.error('Boom')
+    let result: any = log.flush()[0]
+    expect(result.ERROR).toBe(true)
+
+    //  Should not get ERROR property
+    log.info('Boom')
+    result = log.flush()[0]
+    expect(result.ERROR).toBeUndefined()
+})
+
+test('Flag map', async() => {
+    let log: any = new SenseLogs({destination: 'capture', flag: {error: 'ERROR', warn: 'WARN'}})
+
+    //  Should get ERROR property
+    log.error('Boom')
+    let result: any = log.flush()[0]
+    expect(result.ERROR).toBe(true)
+
+    //  Should get WARN property
+    log.warn('Boom')
+    result = log.flush()[0]
+    expect(result.WARN).toBe(true)
 })
 
 test('Add Node exceptions', async() => {
