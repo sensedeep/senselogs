@@ -430,9 +430,9 @@ export default class SenseLogs {
     /*
         Emit a CloudWatch metic using the CloudWatch EMF format.
 
-        metrics('metrics', 'MyCompany/MyApp', {UserSessions: 1}, dimensions)
+        metrics('metrics', message, 'MyCompany/MyApp', {UserSessions: 1}, dimensions, {UserSessions: 'Count'})
     */
-    metrics(chan, namespace, values, dimensions = [[]]) {
+    metrics(chan, message, namespace, values, dimensions = [[]], units = null) {
         if (!this.#top.#filter.metrics) {
             return
         }
@@ -441,12 +441,21 @@ export default class SenseLogs {
             throw new Error('Missing namespace or values')
         }
         let keys = Object.keys(values).filter(v => dimensions[0].indexOf(v) < 0)
-        let metrics = keys.map(v => {return {Name: v}})
+        let metrics = keys.map(name => {
+            let def = {Name: name}
+            if (units) {
+                let unit = units[name] || units.default
+                if (unit) {
+                    def.unit = unit
+                }
+            }
+            return def
+        })
         let context = {
             '@chan': chan,
             '@namespace': namespace,
             '@metrics': keys,
-            message: `Metrics for ${namespace} ` + JSON.stringify(Object.assign({
+            message: message + ' ' + JSON.stringify(Object.assign({
                 _aws: {
                     Timestamp: Date.now(),
                     CloudWatchMetrics: [{

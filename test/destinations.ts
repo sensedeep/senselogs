@@ -35,7 +35,7 @@ test('Console', async() => {
     log.trace('Trace message')
     expect(true).toBe(true)
 
-    log.metrics('metrics', 'Acme/Rockets', {sessions: 1})
+    log.metrics('metrics', 'Acme Metrics', 'Acme/Rockets', {sessions: 1})
     expect(true).toBe(true)
 
     log.addContext({one: 1, two: 2})

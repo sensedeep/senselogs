@@ -18,7 +18,7 @@ SenseLogs is designed to do this, simply and elegantly.
 ## SenseLogs Features
 
 * Extremely fast initialization time to shorten cold-starts.
-* Up to 7 times faster than the nearest competitor logger.
+* Up to 7 times faster than the nearest alternative.
 * Flexible log channels and filters.
 * Dynamic log control to change log filters without redeploying.
 * Log sampling to emit increased logs for a percentage of requests.
@@ -314,7 +314,7 @@ CloudWatch receives EMF metrics and dynamically creates and tracks metrics witho
 EMF is one of the hidden gems in CloudWatch.
 
 ```javascript
-log.metrics('metrics', 'Acme/Rockets', {Launches: 1})
+log.metrics('metrics', 'Acme Metrics', 'Acme/Rockets', {Launches: 1})
 ```
 
 The metrics API take the log channel as the first parameter. This is typically set to `metrics` but can be any channel.
@@ -536,7 +536,7 @@ Return a map containing the current sample definition.
 Convenience method that takes the channel as the first argument.
 
 
-#### metrics(channel: string, namespace: string, values: [], dimensions = [[]])
+#### metrics(channel: string, message: string, namespace: string, values: [], dimensions = [[]])
 
 Emit metrics in [CloudWatch EMF](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch_Embedded_Metric_Format_Specification.html) format.
 

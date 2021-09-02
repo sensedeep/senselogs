@@ -52,5 +52,5 @@ export default class SenseLogs {
     emit(chan: string, message: string, context?: {}): void;
 
     assert(truthy: any, message?: string | Error, context?: {}): void;
-    metrics(chan: string, namespace: string, values: {}, dimensions?: any[][]): void;
+    metrics(chan: string, message: string, namespace: string, values: {}, dimensions?: any[][], units?: {}): void;
 }
