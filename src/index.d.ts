@@ -2,8 +2,6 @@
     SenseLogs TypeScript definitions
 */
 
-import { MessageChannel } from "worker_threads";
-
 type Destination = {
     write: (log: SenseLogs, context: {}) => void
 };

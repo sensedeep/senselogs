@@ -430,15 +430,19 @@ export default class SenseLogs {
     /*
         Emit a CloudWatch metic using the CloudWatch EMF format.
 
-        metrics('metrics', message, 'MyCompany/MyApp', {UserSessions: 1}, dimensions, {UserSessions: 'Count'})
+        metrics(chan, message, 'MyCompany/MyApp', {UserSessions: 1}, dimensions, {UserSessions: 'Count'})
     */
     metrics(chan, message, namespace, values, dimensions = [[]], units = null) {
-        if (!this.#top.#filter.metrics) {
+        let top = this.#top
+        if (!top.#filter.metrics) {
             return
         }
         /* istanbul ignore next */
         if (!namespace || !values) {
             throw new Error('Missing namespace or values')
+        }
+        if (!this.enabled(chan, 1)) {
+            return
         }
         let keys = Object.keys(values).filter(v => dimensions[0].indexOf(v) < 0)
         let metrics = keys.map(name => {

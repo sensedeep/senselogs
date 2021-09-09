@@ -393,7 +393,7 @@ But for all others, you can connect the redact function to any one of the NPM re
 
 ### SenseLogs Class API
 
-The SenseLogs class provides the public API for SenseLogs and public properties..
+The SenseLogs class provides the public API for SenseLogs and public properties.
 
 ### SenseLogs Constructor
 
