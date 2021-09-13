@@ -1,5 +1,7 @@
 ![SenseLogs](https://www.sensedeep.com/images/senselogs.png)
 
+*Observability without the crushing performance cost*
+
 [![Build Status](https://img.shields.io/github/workflow/status/sensedeep/senselogs/build)](https://img.shields.io/github/workflow/status/sensedeep/senselogs/build)
 [![npm](https://img.shields.io/npm/v/senselogs.svg)](https://www.npmjs.com/package/senselogs)
 [![npm](https://img.shields.io/npm/l/senselogs.svg)](https://www.npmjs.com/package/senselogs)
@@ -13,24 +15,25 @@ While there are many other good logging libraries that claim to be fast, they we
 
 Furthermore, serverless apps have special requirements like minimizing cold-start time, dynamic log filtering control without redeploying and being able to capture detailed context and request information without modifying your functions.
 
-SenseLogs is designed to do this, simply and elegantly.
+SenseLogs is designed to do this, simply and elegantly. SenseLogs makes it easy to instrument your code for maximum Observability without a crushing performance penalty.
 
 ## SenseLogs Features
 
-* Extremely fast initialization time to shorten cold-starts.
-* Up to 7 times faster than the nearest alternative.
+* Emit log data with rich context for maximum Observability.
 * Flexible log channels and filters.
 * Dynamic log control to change log filters without redeploying.
+* Emits logs in JSON with full context.
+* Extremely fast initialization time to shorten cold-starts.
+* Up to 7 times faster than the nearest alternative.
 * Log sampling to emit increased logs for a percentage of requests.
-* Emits logs in JSON with rich context.
 * For local debugging, emits in human readable formats.
 * Inheriting child log instances for per-module logging.
 * Stack capture for uncaught exceptions.
 * Easily emit CloudWatch custom metrics using EMF.
-* Integrates with SenseDeep developer studio.
-* No dependencies.
-* Clean, readable small code base (<500 lines).
+* Integrates with [SenseDeep](https://www.sensedeep.com) developer studio.
 * Full TypeScript support.
+* Clean, readable small code base (<500 lines).
+* No dependencies.
 
 
 ## Quick Tour
