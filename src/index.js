@@ -430,9 +430,11 @@ export default class SenseLogs {
     /*
         Emit a CloudWatch metic using the CloudWatch EMF format.
 
-        metrics(chan, message, 'MyCompany/MyApp', {UserSessions: 1}, dimensions, {UserSessions: 'Count'})
+        metrics(chan, message, 'MyCompany/MyApp', {UserSessions: 1}, dimensions, {UserSessions: 'Count'}, properties)
+        Dimensions are an array of dimension names. The values must be in `values`
+        Properties are additional properties that are not metrics, but are emitted. Useful for SenseDeep & insights.
     */
-    metrics(chan, message, namespace, values, dimensions = [[]], units = null) {
+    metrics(chan, message, namespace, values, dimensions = [], units = null, properties = {}) {
         let top = this.#top
         if (!top.#filter.metrics) {
             return
@@ -444,13 +446,14 @@ export default class SenseLogs {
         if (!this.enabled(chan, 1)) {
             return
         }
-        let keys = Object.keys(values).filter(v => dimensions[0].indexOf(v) < 0)
+        //  Get list of value keys that are not in dimensions. These are the metrics.
+        let keys = Object.keys(values).filter(v => dimensions.indexOf(v) < 0)
         let metrics = keys.map(name => {
             let def = {Name: name}
             if (units) {
                 let unit = units[name] || units.default
                 if (unit) {
-                    def.unit = unit
+                    def.Unit = unit
                 }
             }
             return def
@@ -463,12 +466,12 @@ export default class SenseLogs {
                 _aws: {
                     Timestamp: Date.now(),
                     CloudWatchMetrics: [{
-                        Dimensions: dimensions,
+                        Dimensions: [dimensions],
                         Namespace: namespace,
                         Metrics: metrics,
                     }]
                 },
-            }, values))
+            }, properties, values))
         }
         //  Write directly bypassing process and format()
         for (let {dest} of this.#top.#destinations) {

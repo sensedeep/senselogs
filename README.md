@@ -539,7 +539,7 @@ Return a map containing the current sample definition.
 Convenience method that takes the channel as the first argument.
 
 
-#### metrics(channel: string, message: string, namespace: string, values: [], dimensions = [[]])
+#### metrics(channel: string, message: string, namespace: string, values: {}, dimensions = [], units = null, properties = {})
 
 Emit metrics in [CloudWatch EMF](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch_Embedded_Metric_Format_Specification.html) format.
 
@@ -551,7 +551,9 @@ The log format for metric messages will always be unformatted which is required 
 
 The namespace is your unique custom namespace and usually consists of your name with service name. For example: 'MyCorp/App'.
 
-The values is an array of metric values to submit. Dimensions are the optional CloudWatch Metrics two-dimensional array of extra dimensions.
+The `values` is a map of metric values to submit. Dimensions are the optional CloudWatch Metrics array of dimensions. Units are the optional map of metric unit types. The `units` map may contain a `default` property that contains the default unit type to use.
+
+The `properties` are additional properties that are emitted, but not as metrics. They can be searched using SenseDeep or insights. These are useful for high-cardinality items that if emitted as metrics would incur significant CloudWatch metric costs.
 
 #### setFilter(filter: string | array)
 
