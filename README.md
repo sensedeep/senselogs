@@ -250,6 +250,23 @@ This will log the given message with the child context and the context of all it
 Child instances can be created to any desired depth. i.e. a child can be created from a child instance.
 
 
+### Correlation Trace IDs
+
+If you are using AWS Lambda, SenseLogs supports the propagation of trace IDs by simply passing in the lambda `event` and `context` parameters. SenseLogs will extract the API Gateway requestId, Lambda requestId and X-Ray trace ID.
+
+```
+log.addTraceIds(event, context)
+```
+
+SenseLogs will map these IDs to a uniform x-correlation-NAME SenseLogs context variables. The following variables are supported:
+
+x-correlation-api &mdash; API Gateway requestId
+x-correlation-lambda &mdash; Lambda requestId
+x-correlation-trace &mdash; X-Ray X-Amzn-Trace-Id header
+x-correlation-extended &mdash; AWS extended request ID
+
+SenseLogs will define a special variable 'x-correlation-id' that can be used as a stable request ID. It will be initialized to the value of the X-Correlation-ID header or if not defined, SenseLogs will use (in order) API Gateway request or X-Ray trace ID.
+
 ### Dynamic Logging
 
 SenseLogs filtering can be dynamically controlled by calling `addFilter` or by setting environment variables for Lambda functions.
