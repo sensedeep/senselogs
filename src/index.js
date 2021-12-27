@@ -75,7 +75,7 @@ export default class SenseLogs {
             }
             this.addUncaughtExceptions()
         }
-        this.context = context
+        this.context = Object.assign({}, context)
     }
 
     /*
@@ -97,6 +97,18 @@ export default class SenseLogs {
                 this.#top.#filter[chan] = true
             }
         }
+        return this
+    }
+
+    addTraceIds(event, context) {
+        let requestId = event.requestContext.requestId
+        this.addContext({
+            'x-correlation-id': event.headers['x-correlation-id'] || requestId || event.headers['X-Amzn-Trace-Id'],
+            'x-correlation-api': requestId,
+            'x-correlation-lambda': context.awsRequestId,
+            'x-correlation-trace': event.headers['X-Amzn-Trace-Id'],
+            'x-correlation-extended': event.requestContext.extendedRequestId,
+        })
         return this
     }
 
@@ -415,7 +427,9 @@ export default class SenseLogs {
     flush(what) {
         let buffer
         for (let {dest} of this.#top.#destinations) {
-            buffer = dest.flush(this.#top, what)
+            if (dest.flush) {
+                buffer = dest.flush(this.#top, what)
+            }
         }
         return buffer
     }

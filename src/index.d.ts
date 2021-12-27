@@ -24,6 +24,7 @@ export default class SenseLogs {
     addContext(contexts: {} | {}[]): SenseLogs;
     addDestination(dest: Destination, format?: Format): SenseLogs;
     addFilter(filter?: string | string[]): SenseLogs;
+    addTraceIds(event: {}, context: {}): SenseLogs;
     enabled(chan: string): boolean
     child(context?: {}): SenseLogs;
     clearContext(): SenseLogs;
