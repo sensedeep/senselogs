@@ -301,7 +301,7 @@ The [SenseDeep serverless studio](https://www.sensedeep.com) manages these filte
 The LOG_FILTER is read by the SenseLogs constructor to invoke `setFilter` to define the default log filter. Set it to a comma separated list of log channels. For example:
 
 ```shell
-    LOG_FILTER=fatal,error,info
+LOG_FILTER=fatal,error,info
 ```
 
 #### LOG_OVERRIDE
@@ -309,7 +309,7 @@ The LOG_FILTER is read by the SenseLogs constructor to invoke `setFilter` to def
 The LOG_OVERRIDE is read by SenseLogs to invoke `setOverride` to define an override log filter that will apply for a limited duration of time. Set it to a comma separated list of log channels that is prefixed by an expiry time as a Unix epoch (seconds since Jan 1 1970). For example:
 
 ```shell
-    LOG_OVERRIDE=1626409530045:data,trace
+LOG_OVERRIDE=1626409530045:data,trace
 ```
 
 ### LOG_SAMPLE
@@ -317,7 +317,7 @@ The LOG_OVERRIDE is read by SenseLogs to invoke `setOverride` to define an overr
 The LOG_SAMPLE is used to invoke `setSample` to define an additional log filter that will apply for percentage of requests. Set it to a comma separated list of log channels that is prefixed by a percentage. For example:
 
 ```shell
-    LOG_SAMPLE=1%:trace
+LOG_SAMPLE=1%:trace
 ```
 
 This will cause 1% of log requests to the given log channels to be logged. This is useful to ensure you have a complete trace of some requests at all times without needing to redeploy or reconfigure.
@@ -369,29 +369,40 @@ log.debug('Should never get here', {'@stack': true})
 
 ### Flagging Errors
 
-If you are using an automated alerting platform like [SenseDeep](https://www.sensedeep.com/), it can be helpful to add a searchable property to logs messages emitted via the `error` or `fatal` channels. The flag option will nominate a property that will be created in your log messages.
+If you are using an alerting platform like the [SenseDeep Serverless Studio](https://www.sensedeep.com/) to automatically detect your app errors, it can be helpful to add a searchable property for errors and other important application events. The flag option will nominate a property value that will be emitted in your log events for error channels.
+
+For example:
 
 ```javascript
-new SenseLogs({flag: 'ERROR'})
+new SenseLogs({flag: 'FLAG_ERROR'})
 log.error('Boom')
+```
+
+This will emit an 'FLAG_ERROR: true' property value for the `error` and `fatal` log message channels.
+
+```json
+{
+    "message": "Boom",
+    "FLAG_ERROR": true
+}
+```
+
+Your alerting platform can then easily trigger alerts for messages that include the property `FLAG_ERROR`.
+
+If the flag option is set to an map of channels, then the nominated channels will be flagged with the associated value string. For example:
+
+```javavscript
+new SenseLogs({flag: {warn: 'FLAG_WARN', error: 'FLAG_ERROR', custom: 'FLAG_CUSTOM'})
+log.warn('Storm front coming')
 ```
 
 This will emit:
 
 ```json
 {
-    "message": "Boom",
-    "ERROR": true
+    "message": "Storm front coming",
+    "FLAG_WARN": true
 }
-```
-
-Your alerting platform can then easily trigger alerts for messages that include `ERROR`.
-
-If the flag option is set to a string, then the error and fatal channels will be flagged. The flag option may also be set to a map for other channels. For example:
-
-```javavscript
-new SenseLogs({flag: {warn: 'WARN', error: 'ERROR'})
-log.warn('Storm front coming')
 ```
 
 ### Redacting Sensitive Information
