@@ -101,14 +101,36 @@ export default class SenseLogs {
     }
 
     addTraceIds(event, context) {
-        let requestId = event.requestContext.requestId
-        this.addContext({
-            'x-correlation-id': event.headers['x-correlation-id'] || requestId || event.headers['X-Amzn-Trace-Id'],
-            'x-correlation-api': requestId,
-            'x-correlation-lambda': context.awsRequestId,
-            'x-correlation-trace': event.headers['X-Amzn-Trace-Id'],
-            'x-correlation-extended': event.requestContext.extendedRequestId,
-        })
+        let params = {}
+
+        //  API Gateway
+        let rcontext = event.requestContext || {}
+        let headers = event.headers || {}
+        let requestId = rcontext.requestId
+
+        //  Event Bridge
+        let detail = event.detail || {}
+        let id = detail['x-correlation-id'] || headers['x-correlation-id'] || requestId || headers['X-Amzn-Trace-Id']
+
+        if (id) {
+            params['x-correlation-id'] = id
+        }
+        if (context) {
+            params['x-correlation-lambda'] = context.awsRequestId
+        }
+        if (event.headers) {
+            params['x-correlation-trace'] = headers['X-Amzn-Trace-Id']
+        }
+        if (event.requestContext) {
+            params['x-correlation-extended'] = rcontext.extendedRequestId
+        }
+        if (requestId) {
+            params['x-correlation-api'] = requestId
+        }
+        if (event.detail && event.id) {
+            params['x-correlation-eventbridge'] = event.id
+        }
+        this.addContext(params)
         return this
     }
 
@@ -305,7 +327,9 @@ export default class SenseLogs {
         if (exception) {
             //  Error objects are not enumerable by JSON. Convert here and convert stack backtraces to arrays for formatting.
             let err = context['@exception'] = JSON.parse(JSON.stringify(exception, Object.getOwnPropertyNames(exception)), null, 4)
-            err.stack = err.stack.split('\n').slice(1).map(r => r.trim())
+            if (err.stack) {
+                err.stack = exception.stack.split('\n').slice(1).map(r => r.trim())
+            }
         }
         /*
             Grap a stack snapshot if required
