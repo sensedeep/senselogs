@@ -37,7 +37,7 @@ export default class SenseLogs {
                     this.#flag = options.flag
                 }
             } else {
-                this.#flag = {}
+                this.#flag = {error: 'FLAG_ERROR', fatal: 'FLAG_ERROR'}
             }
 
             let filter = options.filter || DefaultFilter
