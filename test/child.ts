@@ -1,9 +1,7 @@
 /*
     child.ts - child()
  */
-import {SenseLogs, print, dump, delay} from './utils/init'
-
-// jest.setTimeout(7200 * 1000)
+import {SenseLogs} from './utils/init'
 
 test('child instance', async() => {
     const log = new SenseLogs({destination: 'capture'})

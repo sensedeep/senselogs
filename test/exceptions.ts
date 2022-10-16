@@ -1,7 +1,7 @@
 /*
     exceptions.ts -
  */
-import {SenseLogs, print, dump, delay} from './utils/init'
+import {SenseLogs} from './utils/init'
 
 // jest.setTimeout(7200 * 1000)
 
