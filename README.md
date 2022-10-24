@@ -72,10 +72,10 @@ log.error('Another log error message with context', {
 
 This will emit
 
-```javascript
+```json
 {
     "message": "Another log error message with context",
-    "requestId": 1234
+    "requestId": 1234,
     "userId": "58b23f29-3f84-43ff-a767-18d83500dbd3"
 }
 ```
@@ -121,7 +121,7 @@ SenseLogs 6.5 times faster than the best alternative.
 
 ### Output Format
 
-By default SenseLogs will emit log messages in JSON format. However, you can configure the logger to emit human readable output by setting the format to `human`. Tab-delimited format can be specified by setting the format to `tsv`. Key/Value format is specified via `keyvalue`
+By default, SenseLogs will emit log messages in JSON format. However, you can configure the logger to emit human readable output by setting the format to `human`. Tab-delimited format can be specified by setting the format to `tsv`. Key/Value format is specified via `keyvalue`
 
 ```javascript
 const log = new SenseLogs({format: 'tsv'})
@@ -142,7 +142,7 @@ You can supply additional destinations at any time via the `addDestination`. Thi
 
 ```javascript
 log.addDestination({
-    write: (logger, context, message) => message)
+    write: (logger, context, message) => message
 }, 'human')
 ```
 
@@ -352,7 +352,7 @@ log.error(new Error('Boom'))
 //  As a context
 log.error('An error', new Error('Boom'))
 
-try { thow new Error() }
+try { throw new Error() }
 catch (err) {
     //  As context.err
     log.error('Caught error', {err})
@@ -628,4 +628,4 @@ You can contact me (Michael O'Brien) on Twitter at: [@mobstream](https://twitter
 
 ### SenseDeep
 
-Please try best way to create serverless apps using the Serverless Developer Studio [SenseDeep](https://www.sensedeep.com/). It is integrated with SenseLogs and will control your filter channels for Lambdas without needing to redeploy.
+Please try the best way to create serverless apps using the Serverless Developer Studio [SenseDeep](https://www.sensedeep.com/). It is integrated with SenseLogs and will control your filter channels for Lambdas without needing to redeploy.

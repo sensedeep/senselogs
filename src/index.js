@@ -61,11 +61,11 @@ export default class SenseLogs {
 
             let format = options.format || 'json'
 
-            if (options.destination == 'console') {
-                this.addDestination(new ConsoleDest(options), format)
+            if (options.destination === 'console') {
+                this.addDestination(new ConsoleDest(), format)
 
-            } else if (options.destination == 'capture') {
-                this.addDestination(new CaptureDest(options), format)
+            } else if (options.destination === 'capture') {
+                this.addDestination(new CaptureDest(), format)
 
             } else if (options.destination && typeof options.destination.write == 'function') {
                 this.addDestination(options.destination, format)
@@ -86,7 +86,7 @@ export default class SenseLogs {
             return this
         }
         if (!Array.isArray(filter)) {
-            if (filter == 'default') {
+            if (filter === 'default') {
                 filter = DefaultFilter
             } else {
                 filter = filter.split(',').map(f => f.trim())
@@ -332,7 +332,7 @@ export default class SenseLogs {
             }
         }
         /*
-            Grap a stack snapshot if required
+            Grab a stack snapshot if required
         */
         if (context['@stack'] === true) {
             try {
@@ -361,7 +361,7 @@ export default class SenseLogs {
             context[flag[chan]] = true
         }
         /*
-            Blend the log context with this calls context. This call takes precedence.
+            Blend the log context with this call's context. This call takes precedence.
         */
         return Object.assign({}, this.context, context)
     }
@@ -369,19 +369,19 @@ export default class SenseLogs {
     format(context, format) {
         let chan = context['@chan']
         let message
-        if (format == 'json') {
+        if (format === 'json') {
             message = this.jsonFormat(context)
 
-        } else if (format == 'human') {
+        } else if (format === 'human') {
             message = this.humanFormat(context)
 
-        } else if (format == 'tsv') {
+        } else if (format === 'tsv') {
             message = this.tsvFormat(context)
 
-        } else if (format == 'keyvalue') {
+        } else if (format === 'keyvalue') {
             message = this.keyValueFormat(context)
 
-        } else if (typeof format == 'function') {
+        } else if (typeof format === 'function') {
             message = format(context)
 
         } else {
@@ -432,7 +432,7 @@ export default class SenseLogs {
     }
 
     assert(truthy, message = '', context = {}) {
-        if (! (Boolean(truthy) && truthy != 'false')) {
+        if (! (Boolean(truthy) && truthy !== 'false')) {
             message = 'Assert failed' + (message ? `: ${message}` : '')
             this.process('assert', message, context)
         }
@@ -466,7 +466,7 @@ export default class SenseLogs {
     }
 
     /*
-        Emit a CloudWatch metic using the CloudWatch EMF format.
+        Emit a CloudWatch metric using the CloudWatch EMF format.
 
         metrics(chan, message, 'MyCompany/MyApp', {UserSessions: 1}, dimensions, {UserSessions: 'Count'}, properties)
         Dimensions are an array of dimension names. The values must be in `values`
@@ -564,7 +564,7 @@ class CaptureDest {
     messages = []
     contexts = []
     flush(log, what = 'context') {
-        let result = what == 'message' ? this.messages : this.contexts
+        let result = what === 'message' ? this.messages : this.contexts
         this.messages = []
         this.contexts = []
         return result
@@ -579,7 +579,7 @@ class CaptureDest {
 //  AWS Lambda Node will prefix messages with an ISO timestamp and request ID (redundantly)
 class ConsoleDest {
     write(log, context, message) {
-        if (context['@chan'] == 'error') {
+        if (context['@chan'] === 'error') {
             console.error(message)
         } else {
             console.log(message)

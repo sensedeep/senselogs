@@ -1,5 +1,4 @@
-import process from 'process'
-import {Stream} from 'stream'
+import * as process from 'process'
 import SenseLogs from '../../src/index'
 
 function nop() {}
