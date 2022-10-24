@@ -1,7 +1,7 @@
 /*
     constructor.ts - Constructor test
  */
-import {SenseLogs, print, dump, delay, cap} from './utils/init'
+import {SenseLogs, cap} from './utils/init'
 
 // jest.setTimeout(7200 * 1000)
 
