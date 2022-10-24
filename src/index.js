@@ -590,8 +590,11 @@ class ConsoleDest {
 
 class StdoutDest {
     constructor(options) {
-        /* istanbul ignore next */
-        this.stdout = process.stdout || {write: this.output}
+        if (typeof process != 'undefined' && process.stdout) {
+            this.stdout = process.stdout
+        } else {
+            this.stdout = {write: this.output}
+        }
     }
 
     write(log, context, message) {
