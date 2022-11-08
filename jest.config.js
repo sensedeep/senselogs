@@ -8,9 +8,6 @@ module.exports = {
     ],
     coverageDirectory: "coverage",
     globals: {
-      'ts-jest': {
-          useESM: true
-      },
       __DYNAMODB__: null,
     },
     roots: [
