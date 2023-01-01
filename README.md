@@ -2,7 +2,10 @@
 
 *Observability without the crushing performance cost*
 
-[![Build Status](https://img.shields.io/github/workflow/status/sensedeep/senselogs/build)](https://img.shields.io/github/workflow/status/sensedeep/senselogs/build)
+[![Build Status](https://img.shields.io/github/workflow/status/sensedeep/dynamodb-onetable/build)](https://img.shields.io/github/workflow/status/sensedeep/dynamodb-onetable/build)
+
+
+[![Build Status](https://img.shields.io/github/actions/workflow/status/sensedeep/senselogs/build.yml?branch=main)](https://img.shields.io/github/actions/workflow/status/sensedeep/senselogs/build.yml?branch=main)
 [![npm](https://img.shields.io/npm/v/senselogs.svg)](https://www.npmjs.com/package/senselogs)
 [![npm](https://img.shields.io/npm/l/senselogs.svg)](https://www.npmjs.com/package/senselogs)
 [![Coverage Status](https://coveralls.io/repos/github/sensedeep/senselogs/badge.svg?branch=main)](https://coveralls.io/github/sensedeep/senselogs?branch=main)
