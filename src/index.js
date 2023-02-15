@@ -63,13 +63,10 @@ export default class SenseLogs {
 
             if (options.destination === 'console') {
                 this.addDestination(new ConsoleDest(), format)
-
             } else if (options.destination === 'capture') {
                 this.addDestination(new CaptureDest(), format)
-
             } else if (options.destination && typeof options.destination.write == 'function') {
                 this.addDestination(options.destination, format)
-
             } else {
                 this.addDestination(new StdoutDest(options), format)
             }
@@ -89,7 +86,7 @@ export default class SenseLogs {
             if (filter === 'default') {
                 filter = DefaultFilter
             } else {
-                filter = filter.split(',').map(f => f.trim())
+                filter = filter.split(',').map((f) => f.trim())
             }
         }
         for (let chan of filter) {
@@ -167,7 +164,7 @@ export default class SenseLogs {
             expire = Date.now()
         }
         if (!Array.isArray(filter)) {
-            filter = filter.split(',').map(f => f.trim())
+            filter = filter.split(',').map((f) => f.trim())
         }
         for (let chan of filter) {
             if (chan) {
@@ -192,7 +189,7 @@ export default class SenseLogs {
             rate = 100
         }
         if (!Array.isArray(filter)) {
-            filter = filter.split(',').map(f => f.trim())
+            filter = filter.split(',').map((f) => f.trim())
         }
         if (rate > 0) {
             for (let chan of filter) {
@@ -305,65 +302,88 @@ export default class SenseLogs {
         if (!this.enabled(chan, 1)) {
             return null
         }
-        let exception
+        //  Clone so we don't alter callers context object
+        let ctx = Object.assign({}, context)
 
         /*
             Handle exceptions where context, message or context.err is an Error
         */
+        let exception
         if (context instanceof Error) {
-            exception = context
-            context = {}
-        } else {
-            context = Object.assign({}, context)
-        }
-        if (message instanceof Error) {
+            //  Use context as exception and cleanup context
+            exception = {code: context.code, message: context.message, stack: context.stack}
+            delete ctx.code
+            delete ctx.message
+            delete ctx.stack
+        } else if (message instanceof Error) {
+            //  Use message as exception
             exception = message
             message = exception.message
-
         } else if (context.err instanceof Error) {
+            //  Extract error and cleanup context
             exception = context.err
-            delete context.err
+            if (Object.keys(context).length == 1) {
+                //  {err} is only context, so hoist
+                ctx = context.err
+                delete ctx.code
+                delete ctx.message
+                delete ctx.stack
+            } else {
+                delete ctx.err.code
+                delete ctx.err.message
+                delete ctx.err.stack
+            }
         }
         if (exception) {
             //  Error objects are not enumerable by JSON. Convert here and convert stack backtraces to arrays for formatting.
-            let err = context['@exception'] = JSON.parse(JSON.stringify(exception, Object.getOwnPropertyNames(exception)), null, 4)
+            let err = (ctx['@exception'] = JSON.parse(
+                JSON.stringify(exception, Object.getOwnPropertyNames(exception)),
+                null,
+                4
+            ))
             if (err.stack) {
-                err.stack = exception.stack.split('\n').slice(1).map(r => r.trim())
+                err.stack = exception.stack
+                    .split('\n')
+                    .slice(1)
+                    .map((r) => r.trim())
             }
         }
         /*
             Grab a stack snapshot if required
         */
-        if (context['@stack'] === true) {
+        if (ctx['@stack'] === true) {
             try {
-                context['@stack'] = (new Error('stack')).stack.split('\n').slice(1).map(r => r.trim())
+                ctx['@stack'] = new Error('stack').stack
+                    .split('\n')
+                    .slice(1)
+                    .map((r) => r.trim())
             } catch (err) {}
         }
         /*
             Save a message already in the context
         */
-        if (context.message) {
-            context['@message'] = context.message
+        if (ctx.message) {
+            ctx['@message'] = ctx.message
         }
-        context.message = (typeof message == 'string') ? message : JSON.stringify(message)
+        ctx.message = typeof message == 'string' ? message : JSON.stringify(message)
 
-        context['@chan'] = chan
-        context['@module'] = context['@module'] || top.#name
+        ctx['@chan'] = chan
+        ctx['@module'] = ctx['@module'] || top.#name
 
         if (this.#top.#timestamp) {
-            context.timestamp = new Date()
+            ctx.timestamp = new Date()
         }
         /*
             Flag the message if the flag property is present for this channel
         */
         let flag = top.#flag
         if (flag[chan]) {
-            context[flag[chan]] = true
+            ctx[flag[chan]] = true
         }
         /*
             Blend the log context with this call's context. This call takes precedence.
         */
-        return Object.assign({}, this.context, context)
+        return Object.assign({}, this.context, ctx)
     }
 
     format(context, format) {
@@ -371,19 +391,14 @@ export default class SenseLogs {
         let message
         if (format === 'json') {
             message = this.jsonFormat(context)
-
         } else if (format === 'human') {
             message = this.humanFormat(context)
-
         } else if (format === 'tsv') {
             message = this.tsvFormat(context)
-
         } else if (format === 'keyvalue') {
             message = this.keyValueFormat(context)
-
         } else if (typeof format === 'function') {
             message = format(context)
-
         } else {
             message = this.jsonFormat(context)
         }
@@ -419,8 +434,8 @@ export default class SenseLogs {
         let message
 
         if (exception) {
-            message = `${time}: ${prefix}: ${context.message}` + '\n' + exception + '\n' + JSON.stringify(context, null, 4)
-
+            message =
+                `${time}: ${prefix}: ${context.message}` + '\n' + exception + '\n' + JSON.stringify(context, null, 4)
         } else {
             message = `${time}: ${prefix}: ${context.message}`
             if (Object.keys(context).length > 3) {
@@ -432,20 +447,36 @@ export default class SenseLogs {
     }
 
     assert(truthy, message = '', context = {}) {
-        if (! (Boolean(truthy) && truthy !== 'false')) {
+        if (!(Boolean(truthy) && truthy !== 'false')) {
             message = 'Assert failed' + (message ? `: ${message}` : '')
             this.process('assert', message, context)
         }
     }
 
-    data(message, context)   { this.process('data', message, context) }
-    debug(message, context)  { this.process('debug', message, context) }
-    error(message, context)  { this.process('error', message, context) }
-    fatal(message, context)  { this.process('fatal', message, context) }
-    info(message, context)   { this.process('info', message, context) }
-    silent(message, context) { this.process('silent', message, context) }
-    trace(message, context)  { this.process('trace', message, context) }
-    warn(message, context)   { this.process('warn', message, context) }
+    data(message, context) {
+        this.process('data', message, context)
+    }
+    debug(message, context) {
+        this.process('debug', message, context)
+    }
+    error(message, context) {
+        this.process('error', message, context)
+    }
+    fatal(message, context) {
+        this.process('fatal', message, context)
+    }
+    info(message, context) {
+        this.process('info', message, context)
+    }
+    silent(message, context) {
+        this.process('silent', message, context)
+    }
+    trace(message, context) {
+        this.process('trace', message, context)
+    }
+    warn(message, context) {
+        this.process('warn', message, context)
+    }
 
     //  Flush context and return (capture) the contexts
     flush(what) {
@@ -485,8 +516,8 @@ export default class SenseLogs {
             return
         }
         //  Get list of value keys that are not in dimensions. These are the metrics.
-        let keys = Object.keys(values).filter(v => dimensions.indexOf(v) < 0)
-        let metrics = keys.map(name => {
+        let keys = Object.keys(values).filter((v) => dimensions.indexOf(v) < 0)
+        let metrics = keys.map((name) => {
             let def = {Name: name}
             if (units) {
                 let unit = units[name] || units.default
@@ -500,16 +531,27 @@ export default class SenseLogs {
             '@chan': chan,
             '@namespace': namespace,
             '@metrics': keys,
-            message: message + ' ' + JSON.stringify(Object.assign({
-                _aws: {
-                    Timestamp: Date.now(),
-                    CloudWatchMetrics: [{
-                        Dimensions: [dimensions],
-                        Namespace: namespace,
-                        Metrics: metrics,
-                    }]
-                },
-            }, properties, values))
+            message:
+                message +
+                ' ' +
+                JSON.stringify(
+                    Object.assign(
+                        {
+                            _aws: {
+                                Timestamp: Date.now(),
+                                CloudWatchMetrics: [
+                                    {
+                                        Dimensions: [dimensions],
+                                        Namespace: namespace,
+                                        Metrics: metrics,
+                                    },
+                                ],
+                            },
+                        },
+                        properties,
+                        values
+                    )
+                ),
         }
         //  Write directly bypassing process and format()
         for (let {dest} of this.#top.#destinations) {
@@ -521,7 +563,7 @@ export default class SenseLogs {
         let self = this
         if (typeof window != 'undefined') {
             /* istanbul ignore next */
-            global.onerror = function(message, module, line, column, err) {
+            global.onerror = function (message, module, line, column, err) {
                 self.error(message, {err})
             }
             /* istanbul ignore next */
@@ -531,7 +573,7 @@ export default class SenseLogs {
                     message += `\r${rejection.reason.stack}`
                 }
                 self.error(message)
-           }
+            }
         }
     }
 
@@ -539,7 +581,7 @@ export default class SenseLogs {
         let self = this
         /* istanbul ignore next */
         if (typeof process != 'undefined') {
-            process.on("uncaughtException", function(err) {
+            process.on('uncaughtException', function (err) {
                 self.error('Uncaught exception', {err})
             })
         }
@@ -557,7 +599,6 @@ export default class SenseLogs {
         return s
     }
 }
-
 
 //  Just for testing so we can capture the output
 class CaptureDest {
@@ -586,7 +627,6 @@ class ConsoleDest {
         }
     }
 }
-
 
 class StdoutDest {
     constructor(options) {

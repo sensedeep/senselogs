@@ -2,3 +2,5 @@ node_modules
 dist/
 coverage
 .coveralls.yml
+.DS_Store
+.tags*
