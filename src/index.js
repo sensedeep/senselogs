@@ -322,12 +322,11 @@ export default class SenseLogs {
         } else if (context.err instanceof Error) {
             //  Extract error and cleanup context
             exception = {code: context.err.code, message: context.err.message, stack: context.err.stack}
-            delete ctx.err.code
-            delete ctx.err.message
-            delete ctx.err.stack
             if (Object.keys(context).length == 1) {
                 //  {err} is only context, so hoist
                 ctx = context.err
+            } else {
+                delete ctx.err
             }
         }
         if (exception) {
