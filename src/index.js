@@ -346,7 +346,7 @@ export default class SenseLogs {
         /*
             Grab a stack snapshot if required
         */
-        if (ctx['@stack'] === true) {
+        if (ctx['@stack'] === true || chan == 'assert') {
             try {
                 ctx['@stack'] = new Error('stack').stack
                     .split('\n')
