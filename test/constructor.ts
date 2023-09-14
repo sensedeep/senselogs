@@ -20,6 +20,7 @@ test('Constructor: destination, name', async() => {
 
 test('Constructor: timestamp', async() => {
     const log = new SenseLogs({name: 'test', destination: 'capture', timestamp: true})
+    log.info('Hello World')
 
     let result: any = log.flush()[0]
     expect(result).toMatchObject({
