@@ -1,6 +1,6 @@
 ![SenseLogs](https://www.sensedeep.com/images/senselogs.png)
 
-*Observability without the crushing performance cost*
+*Observability without the crushing performance cost (6.5 times faster than Pino)*
 
 [![Build Status](https://img.shields.io/github/actions/workflow/status/sensedeep/senselogs/build.yml?branch=main)](https://img.shields.io/github/actions/workflow/status/sensedeep/senselogs/build.yml?branch=main)
 [![npm](https://img.shields.io/npm/v/senselogs.svg)](https://www.npmjs.com/package/senselogs)
