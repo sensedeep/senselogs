@@ -2,10 +2,12 @@
 
 *Observability without the crushing performance cost (6.5 times faster than Pino)*
 
+<!--
 [![Build Status](https://img.shields.io/github/actions/workflow/status/sensedeep/senselogs/build.yml?branch=main)](https://img.shields.io/github/actions/workflow/status/sensedeep/senselogs/build.yml?branch=main)
 [![npm](https://img.shields.io/npm/v/senselogs.svg)](https://www.npmjs.com/package/senselogs)
 [![npm](https://img.shields.io/npm/l/senselogs.svg)](https://www.npmjs.com/package/senselogs)
 [![Coverage Status](https://coveralls.io/repos/github/sensedeep/senselogs/badge.svg?branch=main)](https://coveralls.io/github/sensedeep/senselogs?branch=main)
+-->
 
 **Extremely fast, dynamically controllable logging for serverless.**
 
