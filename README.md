@@ -592,7 +592,7 @@ Set the filter channels described by the given filter parameter. The current fil
 The filter may be a comma separated string or an array of channels. If filter is null, this call will remove all filter channels. If filter is set to 'default', the filter channels will be restored to the default defined via the constructor.
 
 
-#### setOverride(filter: string | array, expire: number)
+#### setOverride(filter: string | array, expires: number)
 
 Set the override filter channels described by the given filter. The override filter will augment the default filter with additional channels until the `expire` time has been reached. When override channels are defined, the enabled channels are those defined by the union of the filter channels and the override channels.
 
