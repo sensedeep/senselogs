@@ -22,10 +22,6 @@
         "aws",
         "amazon"
     ],
-    "author": {
-        "name": "Michael O'Brien",
-        "email": "mob@sensedeep.com"
-    },
     "repository": {
         "type": "git",
         "url": "https://github.com/sensedeep/senselogs.git"
